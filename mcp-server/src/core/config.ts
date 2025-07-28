@@ -4,17 +4,16 @@
  */
 
 import { plainToClass, Transform } from 'class-transformer';
-import { validateSync, ValidationError } from 'class-validator';
-import { IsString, IsEnum, IsOptional, IsNotEmpty, IsNumber, Min, Max } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Max,Min,validateSync, ValidationError  } from 'class-validator';
 import dotenv from 'dotenv';
+
 import {
-  IEnvironmentConfig,
-  ILoggerConfig,
-  IServerConfig,
   IAppConfig,
   IConfigValidationResult,
-  IDefaultConfig
-} from '../types/config.types.js';
+  IDefaultConfig,
+  IEnvironmentConfig,
+  ILoggerConfig,
+  IServerConfig} from '../types/config.types.js';
 import { SpheroNNetwork } from '../types/spheron.types.js';
 import { ConfigurationError } from './errors.js';
 
@@ -30,27 +29,27 @@ class EnvironmentConfigValidation {
   SPHERON_PRIVATE_KEY!: string;
 
   @IsEnum(['testnet', 'mainnet'])
-  @Transform(({ value }) => value || 'testnet')
+  @Transform(({ value }) => value ?? 'testnet')
   SPHERON_NETWORK!: SpheroNNetwork;
 
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => value || 'https://provider-proxy.spheron.network')
+  @Transform(({ value }) => value ?? 'https://provider-proxy.spheron.network')
   PROVIDER_PROXY_URL!: string;
 
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => value || 'http://provider.cpu.gpufarm.xyz:32692/generate')
+  @Transform(({ value }) => value ?? 'http://provider.cpu.gpufarm.xyz:32692/generate')
   YAML_API_URL!: string;
 
   @IsOptional()
   @IsString()
-  @Transform(({ value }) => value || 'info')
+  @Transform(({ value }) => value ?? 'info')
   LOG_LEVEL?: string;
 
   @IsOptional()
   @IsString()
-  @Transform(({ value }) => value || 'development')
+  @Transform(({ value }) => value ?? 'development')
   NODE_ENV?: string;
 }
 
@@ -60,24 +59,24 @@ class EnvironmentConfigValidation {
 class ServerConfigValidation {
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => value || 'Spheron-MCP')
+  @Transform(({ value }) => value ?? 'Spheron-MCP')
   name!: string;
 
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => value || '0.1.0')
+  @Transform(({ value }) => value ?? '0.1.0')
   version!: string;
 
   @IsNumber()
   @Min(1000)
   @Max(60000)
-  @Transform(({ value }) => parseInt(value) || 30000)
+  @Transform(({ value }) => (value ? Number(value) : 30000))
   timeout!: number;
 
   @IsNumber()
   @Min(1)
   @Max(10)
-  @Transform(({ value }) => parseInt(value) || 3)
+  @Transform(({ value }) => (value ? Number(value) : 3))
   retries!: number;
 }
 
@@ -85,20 +84,20 @@ class ServerConfigValidation {
  * Default configuration values
  */
 const DEFAULT_CONFIG: IDefaultConfig = {
-  SPHERON_NETWORK: 'testnet',
-  PROVIDER_PROXY_URL: 'https://provider-proxy.spheron.network',
-  YAML_API_URL: 'http://provider.cpu.gpufarm.xyz:32692/generate',
   LOG_LEVEL: 'info',
-  SERVER_TIMEOUT: 30000,
+  PROVIDER_PROXY_URL: 'https://provider-proxy.spheron.network',
   SERVER_RETRIES: 3,
+  SERVER_TIMEOUT: 30000,
+  SPHERON_NETWORK: 'testnet',
+  YAML_API_URL: 'http://provider.cpu.gpufarm.xyz:32692/generate',
 };
 
 /**
  * Configuration service class
  */
 export class ConfigService {
-  private static instance: ConfigService;
-  private config: IAppConfig;
+  private static instance: ConfigService | undefined;
+  private readonly config: IAppConfig;
 
   private constructor() {
     this.config = this.loadConfiguration();
@@ -107,17 +106,15 @@ export class ConfigService {
   /**
    * Get singleton instance
    */
-  public static getInstance(): ConfigService {
-    if (!ConfigService.instance) {
-      ConfigService.instance = new ConfigService();
-    }
+  public static getInstance = (): ConfigService => {
+    ConfigService.instance ??= new ConfigService();
     return ConfigService.instance;
-  }
+  };
 
   /**
    * Load and validate configuration
    */
-  private loadConfiguration(): IAppConfig {
+  private readonly loadConfiguration = (): IAppConfig => {
     try {
       // Load environment configuration
       const envConfig = this.loadEnvironmentConfig();
@@ -130,8 +127,8 @@ export class ConfigService {
 
       return {
         environment: envConfig,
-        server: serverConfig,
         logger: loggerConfig,
+        server: serverConfig,
       };
     } catch (error) {
       throw new ConfigurationError(
@@ -139,19 +136,19 @@ export class ConfigService {
         { error }
       );
     }
-  }
+  };
 
   /**
    * Load and validate environment configuration
    */
-  private loadEnvironmentConfig(): IEnvironmentConfig {
+  private readonly loadEnvironmentConfig = (): IEnvironmentConfig => {
     const envVars = {
-      SPHERON_PRIVATE_KEY: process.env.SPHERON_PRIVATE_KEY,
-      SPHERON_NETWORK: process.env.SPHERON_NETWORK || DEFAULT_CONFIG.SPHERON_NETWORK,
-      PROVIDER_PROXY_URL: process.env.PROVIDER_PROXY_URL || DEFAULT_CONFIG.PROVIDER_PROXY_URL,
-      YAML_API_URL: process.env.YAML_API_URL || DEFAULT_CONFIG.YAML_API_URL,
-      LOG_LEVEL: process.env.LOG_LEVEL || DEFAULT_CONFIG.LOG_LEVEL,
+      LOG_LEVEL: process.env.LOG_LEVEL ?? DEFAULT_CONFIG.LOG_LEVEL,
       NODE_ENV: process.env.NODE_ENV,
+      PROVIDER_PROXY_URL: process.env.PROVIDER_PROXY_URL ?? DEFAULT_CONFIG.PROVIDER_PROXY_URL,
+      SPHERON_NETWORK: process.env.SPHERON_NETWORK ?? DEFAULT_CONFIG.SPHERON_NETWORK,
+      SPHERON_PRIVATE_KEY: process.env.SPHERON_PRIVATE_KEY,
+      YAML_API_URL: process.env.YAML_API_URL ?? DEFAULT_CONFIG.YAML_API_URL,
     };
 
     const config = plainToClass(EnvironmentConfigValidation, envVars);
@@ -166,17 +163,17 @@ export class ConfigService {
     }
 
     return config as IEnvironmentConfig;
-  }
+  };
 
   /**
    * Load server configuration
    */
-  private loadServerConfig(): IServerConfig {
+  private readonly loadServerConfig = (): IServerConfig => {
     const serverVars = {
-      name: process.env.SERVER_NAME || 'Spheron-MCP',
-      version: process.env.SERVER_VERSION || '0.1.0',
-      timeout: process.env.SERVER_TIMEOUT || DEFAULT_CONFIG.SERVER_TIMEOUT.toString(),
-      retries: process.env.SERVER_RETRIES || DEFAULT_CONFIG.SERVER_RETRIES.toString(),
+      name: process.env.SERVER_NAME ?? 'Spheron-MCP',
+      retries: process.env.SERVER_RETRIES ?? DEFAULT_CONFIG.SERVER_RETRIES.toString(),
+      timeout: process.env.SERVER_TIMEOUT ?? DEFAULT_CONFIG.SERVER_TIMEOUT.toString(),
+      version: process.env.SERVER_VERSION ?? '0.1.0',
     };
 
     const config = plainToClass(ServerConfigValidation, serverVars);
@@ -191,69 +188,69 @@ export class ConfigService {
     }
 
     return config as IServerConfig;
-  }
+  };
 
   /**
    * Load logger configuration
    */
-  private loadLoggerConfig(): ILoggerConfig {
+  private readonly loadLoggerConfig = (): ILoggerConfig => {
     return {
-      level: this.config?.environment?.LOG_LEVEL || DEFAULT_CONFIG.LOG_LEVEL,
-      format: 'combined',
       enableConsole: true,
       enableFile: process.env.ENABLE_FILE_LOGGING === 'true',
       filename: process.env.LOG_FILE_PATH,
+      format: 'combined',
+      level: this.config.environment.LOG_LEVEL ?? DEFAULT_CONFIG.LOG_LEVEL,
     };
-  }
+  };
 
   /**
    * Format validation errors into readable messages
    */
-  private formatValidationErrors(errors: ValidationError[]): string[] {
-    return errors.flatMap(error => 
-      Object.values(error.constraints || {})
+  private readonly formatValidationErrors = (errors: ValidationError[]): string[] => {
+    return errors.flatMap(error =>
+      Object.values(error.constraints ?? {})
     );
-  }
+  };
 
   /**
    * Get environment configuration
    */
-  public getEnvironmentConfig(): IEnvironmentConfig {
+  public getEnvironmentConfig = (): IEnvironmentConfig => {
     return this.config.environment;
-  }
+  };
 
   /**
    * Get server configuration
    */
-  public getServerConfig(): IServerConfig {
+  public getServerConfig = (): IServerConfig => {
     return this.config.server;
-  }
+  };
 
   /**
    * Get logger configuration
    */
-  public getLoggerConfig(): ILoggerConfig {
+  public getLoggerConfig = (): ILoggerConfig => {
     return this.config.logger;
-  }
+  };
 
   /**
    * Get full application configuration
    */
-  public getConfig(): IAppConfig {
+  public getConfig = (): IAppConfig => {
     return this.config;
-  }
+  };
 
   /**
    * Get specific configuration value by key
    */
-  public get<T>(key: keyof IEnvironmentConfig): T {
-    return this.config.environment[key] as T;
-  }
+  public get = (key: keyof IEnvironmentConfig) => {
+    return this.config.environment[key];
+  };
 
   /**
    * Check if configuration is valid
    */
-  public validateConfiguration(): IConfigValidationResult {
+  public validateConfiguration = (): IConfigValidationResult => {
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -269,49 +266,49 @@ export class ConfigService {
       }
 
       // Validate network configuration
-      if (!['testnet', 'mainnet'].includes(this.config.environment.SPHERON_NETWORK)) {
+      if (!['mainnet', 'testnet'].includes(this.config.environment.SPHERON_NETWORK)) {
         errors.push('SPHERON_NETWORK must be either "testnet" or "mainnet"');
       }
 
       return {
-        isValid: errors.length === 0,
         errors,
+        isValid: errors.length === 0,
         warnings,
       };
     } catch (error) {
       return {
-        isValid: false,
         errors: [`Configuration validation failed: ${error instanceof Error ? error.message : String(error)}`],
+        isValid: false,
         warnings,
       };
     }
-  }
+  };
 
   /**
    * Check if running in development mode
    */
-  public isDevelopment(): boolean {
+  public isDevelopment = (): boolean => {
     return this.config.environment.NODE_ENV === 'development';
-  }
+  };
 
   /**
    * Check if running in production mode
    */
-  public isProduction(): boolean {
+  public isProduction = (): boolean => {
     return this.config.environment.NODE_ENV === 'production';
-  }
+  };
 }
 
 /**
  * Create and get configuration service instance
  */
-export function createConfigService(): ConfigService {
+export const createConfigService = (): ConfigService => {
   return ConfigService.getInstance();
-}
+};
 
 /**
  * Get configuration service instance
  */
-export function getConfig(): ConfigService {
+export const getConfig = (): ConfigService => {
   return ConfigService.getInstance();
-}
+};
