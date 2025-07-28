@@ -21,31 +21,31 @@ export type SpheroNOperation =
  */
 export interface ITokenBalance {
   readonly lockedBalance: string;
-  readonly unlockedBalance: string;
   readonly token: string;
+  readonly unlockedBalance: string;
 }
 
 /**
  * Deployment result from Spheron SDK
  */
 export interface IDeploymentResult {
-  readonly leaseId: string;
-  readonly success: boolean;
-  readonly message?: string;
   readonly environment?: Record<string, string>;
+  readonly leaseId: string;
+  readonly message?: string;
+  readonly success: boolean;
 }
 
 /**
  * Lease details from Spheron SDK
  */
 export interface ILeaseDetails {
-  readonly leaseId: string;
-  readonly status: string;
-  readonly provider: string;
-  readonly tenant: string;
   readonly createdAt: string;
   readonly expiresAt?: string;
+  readonly leaseId: string;
+  readonly provider: string;
   readonly specifications?: unknown;
+  readonly status: string;
+  readonly tenant: string;
 }
 
 /**
@@ -53,36 +53,34 @@ export interface ILeaseDetails {
  */
 export interface IDeploymentDetails {
   readonly leaseId: string;
+  readonly logs?: string[];
+  readonly services?: Record<string, unknown>;
   readonly status: string;
   readonly urls?: string[];
-  readonly services?: Record<string, unknown>;
-  readonly logs?: string[];
 }
 
 /**
  * YAML deployment configuration
  */
 export interface IYamlConfig {
-  readonly version: string;
-  readonly services: Record<string, unknown>;
-  readonly profiles?: Record<string, unknown>;
   readonly deployment?: Record<string, unknown>;
+  readonly profiles?: Record<string, unknown>;
+  readonly services: Record<string, unknown>;
+  readonly version: string;
 }
 
 /**
  * Environment variables parsed from YAML
  */
-export interface IEnvironmentVariables {
-  [key: string]: string;
-}
+export type IEnvironmentVariables = Record<string, string>;
 
 /**
  * Provider proxy configuration
  */
 export interface IProviderProxy {
   readonly baseUrl: string;
-  readonly timeout?: number;
   readonly retries?: number;
+  readonly timeout?: number;
 }
 
 /**
