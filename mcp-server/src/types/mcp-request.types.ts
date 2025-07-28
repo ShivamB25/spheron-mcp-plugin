@@ -7,27 +7,27 @@
  * MCP tool call request parameters
  */
 export interface IMcpToolCallParams {
-  readonly name: string;
-  readonly arguments?: Record<string, unknown>;
   readonly _meta?: {
     readonly progressToken?: string | number;
   };
+  readonly arguments?: Record<string, unknown>;
+  readonly name: string;
 }
 
 /**
  * MCP tool call request
  */
 export interface IMcpToolCallRequest {
-  readonly params: IMcpToolCallParams;
   readonly method: 'tools/call';
+  readonly params: IMcpToolCallParams;
 }
 
 /**
  * MCP content item
  */
 export interface IMcpContentItem {
-  readonly type: 'text';
   readonly text: string;
+  readonly type: 'text';
 }
 
 /**
