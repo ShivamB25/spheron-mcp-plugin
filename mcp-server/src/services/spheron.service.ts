@@ -4,30 +4,29 @@
  */
 
 import { SpheronSDK } from '@spheron/protocol-sdk';
-import { readFile } from 'fs/promises';
 import axios from 'axios';
-import {
-  IDeploymentResult,
-  ITokenBalance,
-  ILeaseDetails,
-  IDeploymentDetails,
-  IEnvironmentVariables,
-  ISpheroNSDKConfig
-} from '../types/spheron.types.js';
-import { ISerializedObject } from '../types/mcp-request.types.js';
+import { readFile } from 'fs/promises';
+
 import { 
+  FileSystemError, 
+  NetworkError, 
+  SpheroNError, 
+  YamlProcessingError} from '../core/errors.js';
+import { getLogger } from '../core/logger.js';
+import type { ISerializedObject } from '../types/mcp-request.types.js';
+import type {
+  IDeploymentDetails,
+  IDeploymentResult,
+  IEnvironmentVariables,
+  ILeaseDetails,
+  ISpheroNSDKConfig,
+  ITokenBalance} from '../types/spheron.types.js';
+import type { 
   DeployComputeDto, 
   FetchBalanceDto, 
   FetchDeploymentUrlsDto, 
   FetchLeaseIdDto 
 } from '../types/validation.types.js';
-import { 
-  SpheroNError, 
-  NetworkError, 
-  YamlProcessingError, 
-  FileSystemError 
-} from '../core/errors.js';
-import { getLogger } from '../core/logger.js';
 
 /**
  * Spheron SDK service class
@@ -39,17 +38,17 @@ export class SpheroNService {
 
   constructor(config: ISpheroNSDKConfig) {
     try {
-      this.logger.info('Initializing Spheron SDK', { 
-        network: config.network,
-        hasPrivateKey: !!config.privateKey 
+      this.logger.info('Initializing Spheron SDK', {
+        hasPrivateKey: !!config.privateKey,
+        network: config.network
       });
 
       this.sdk = new SpheronSDK(config.network, config.privateKey);
-      this.yamlApiUrl = config.yamlApiUrl || '';
+      this.yamlApiUrl = config.yamlApiUrl ?? '';
 
       this.logger.info('Spheron SDK initialized successfully');
     } catch (error) {
-      this.logger.error('Failed to initialize Spheron SDK', error);
+      this.logger.error('Failed to initialize Spheron SDK', error as Error);
       throw new SpheroNError(
         `Failed to initialize Spheron SDK: ${error instanceof Error ? error.message : String(error)}`,
         { config: { network: config.network }, error }
@@ -60,7 +59,7 @@ export class SpheroNService {
   /**
    * Deploy compute resources using various input methods
    */
-  public async deployCompute(dto: DeployComputeDto): Promise<IDeploymentResult> {
+  public deployCompute = async (dto: DeployComputeDto): Promise<IDeploymentResult> => {
     this.logger.info('Starting compute deployment', { operation: dto.operation });
 
     try {
@@ -74,18 +73,18 @@ export class SpheroNService {
       this.logger.debug('Creating deployment with Spheron SDK');
       const deploymentResult = await this.sdk.deployment.createDeployment(
         yamlContent,
-        dto.provider_proxy_url || ''
+        dto.provider_proxy_url ?? ''
       );
 
       // Handle BigInt serialization safely
       const safeResult = this.serializeBigIntValues(deploymentResult);
 
-      const leaseId = this.getStringValue(safeResult, 'leaseId') || '';
+      const leaseId = this.getStringValue(safeResult, 'leaseId') ?? '';
       const result: IDeploymentResult = {
+        environment,
         leaseId,
-        success: true,
         message: `Deployment created successfully with lease ID: ${leaseId}`,
-        environment
+        success: true
       };
 
       this.logger.info('Compute deployment completed successfully', { 
@@ -94,7 +93,7 @@ export class SpheroNService {
 
       return result;
     } catch (error) {
-      this.logger.error('Compute deployment failed', error);
+      this.logger.error('Compute deployment failed', error as Error);
       
       if (error instanceof SpheroNError || error instanceof NetworkError || 
           error instanceof YamlProcessingError || error instanceof FileSystemError) {
@@ -111,10 +110,10 @@ export class SpheroNService {
   /**
    * Fetch user wallet balance for specified token
    */
-  public async fetchBalance(dto: FetchBalanceDto): Promise<ITokenBalance> {
+  public fetchBalance = async (dto: FetchBalanceDto): Promise<ITokenBalance> => {
     this.logger.info('Fetching wallet balance', { 
-      token: dto.token,
-      hasWalletAddress: !!dto.wallet_address 
+      hasWalletAddress: !!dto.wallet_address,
+      token: dto.token 
     });
 
     try {
@@ -124,19 +123,21 @@ export class SpheroNService {
       const decimals = 6;
       const result: ITokenBalance = {
         lockedBalance: this.convertTokenUnits(balance.lockedBalance.toString(), decimals),
-        unlockedBalance: this.convertTokenUnits(balance.unlockedBalance.toString(), decimals),
-        token: balance.token
+        token: balance.token,
+        unlockedBalance: this.convertTokenUnits(balance.unlockedBalance.toString(), decimals)
       };
 
       this.logger.info('Balance fetched successfully', { 
-        token: result.token,
         lockedBalance: result.lockedBalance,
+        token: result.token,
         unlockedBalance: result.unlockedBalance
       });
 
       return result;
     } catch (error) {
-      this.logger.error('Failed to fetch balance', error, { token: dto.token });
+      this.logger.error('Failed to fetch balance', error as Error, {
+        token: dto.token,
+      });
       
       throw new SpheroNError(
         `Failed to fetch balance for token ${dto.token}: ${error instanceof Error ? error.message : String(error)}`,
@@ -148,13 +149,13 @@ export class SpheroNService {
   /**
    * Fetch deployment details and URLs
    */
-  public async fetchDeploymentUrls(dto: FetchDeploymentUrlsDto): Promise<IDeploymentDetails> {
+  public fetchDeploymentUrls = async (dto: FetchDeploymentUrlsDto): Promise<IDeploymentDetails> => {
     this.logger.info('Fetching deployment URLs', { leaseId: dto.lease_id });
 
     try {
       const deploymentDetails = await this.sdk.deployment.getDeployment(
-        dto.lease_id, 
-        dto.provider_proxy_url || ''
+        dto.lease_id,
+        dto.provider_proxy_url ?? ''
       );
 
       // Handle BigInt serialization safely
@@ -162,20 +163,22 @@ export class SpheroNService {
 
       const result: IDeploymentDetails = {
         leaseId: dto.lease_id,
-        status: this.getStringValue(safeDetails, 'status') || 'unknown',
-        urls: this.getArrayValue<string>(safeDetails, 'urls'),
+        logs: this.getArrayValue(safeDetails, 'logs'),
         services: this.getObjectValue(safeDetails, 'services'),
-        logs: this.getArrayValue<string>(safeDetails, 'logs')
+        status: this.getStringValue(safeDetails, 'status') ?? 'unknown',
+        urls: this.getArrayValue(safeDetails, 'urls')
       };
 
-      this.logger.info('Deployment URLs fetched successfully', { 
+      this.logger.info('Deployment URLs fetched successfully', {
         leaseId: result.leaseId,
-        urlCount: result.urls?.length || 0
+        urlCount: result.urls?.length ?? 0
       });
 
       return result;
     } catch (error) {
-      this.logger.error('Failed to fetch deployment URLs', error, { leaseId: dto.lease_id });
+      this.logger.error('Failed to fetch deployment URLs', error as Error, {
+        leaseId: dto.lease_id,
+      });
       
       throw new SpheroNError(
         `Failed to fetch deployment URLs for lease ${dto.lease_id}: ${error instanceof Error ? error.message : String(error)}`,
@@ -187,7 +190,7 @@ export class SpheroNService {
   /**
    * Fetch detailed lease information
    */
-  public async fetchLeaseDetails(dto: FetchLeaseIdDto): Promise<ILeaseDetails> {
+  public fetchLeaseDetails = async (dto: FetchLeaseIdDto): Promise<ILeaseDetails> => {
     this.logger.info('Fetching lease details', { leaseId: dto.lease_id });
 
     try {
@@ -197,13 +200,13 @@ export class SpheroNService {
       const safeDetails = this.serializeBigIntValues(leaseDetails);
 
       const result: ILeaseDetails = {
-        leaseId: dto.lease_id,
-        status: this.getStringValue(safeDetails, 'status') || 'unknown',
-        provider: this.getStringValue(safeDetails, 'provider') || '',
-        tenant: this.getStringValue(safeDetails, 'tenant') || '',
-        createdAt: this.getStringValue(safeDetails, 'createdAt') || new Date().toISOString(),
+        createdAt: this.getStringValue(safeDetails, 'createdAt') ?? new Date().toISOString(),
         expiresAt: this.getStringValue(safeDetails, 'expiresAt'),
-        specifications: this.getObjectValue(safeDetails, 'specifications')
+        leaseId: dto.lease_id,
+        provider: this.getStringValue(safeDetails, 'provider') ?? '',
+        specifications: this.getObjectValue(safeDetails, 'specifications'),
+        status: this.getStringValue(safeDetails, 'status') ?? 'unknown',
+        tenant: this.getStringValue(safeDetails, 'tenant') ?? ''
       };
 
       this.logger.info('Lease details fetched successfully', { 
@@ -213,7 +216,9 @@ export class SpheroNService {
 
       return result;
     } catch (error) {
-      this.logger.error('Failed to fetch lease details', error, { leaseId: dto.lease_id });
+      this.logger.error('Failed to fetch lease details', error as Error, {
+        leaseId: dto.lease_id,
+      });
       
       throw new SpheroNError(
         `Failed to fetch lease details for ${dto.lease_id}: ${error instanceof Error ? error.message : String(error)}`,
@@ -225,9 +230,9 @@ export class SpheroNService {
   /**
    * Get YAML content based on input method (natural language, direct content, or file)
    */
-  private async getYamlContent(dto: DeployComputeDto): Promise<string> {
+  private readonly getYamlContent = async (dto: DeployComputeDto): Promise<string> => {
     if (dto.request) {
-      return await this.generateYamlFromRequest(dto.request);
+      return this.generateYamlFromRequest(dto.request);
     }
     
     if (dto.yaml_content) {
@@ -236,61 +241,66 @@ export class SpheroNService {
     }
     
     if (dto.yaml_path) {
-      return await this.loadYamlFromFile(dto.yaml_path);
+      return this.loadYamlFromFile(dto.yaml_path);
     }
 
     throw new YamlProcessingError('No YAML input method provided');
-  }
+  };
 
   /**
    * Generate YAML from natural language request using external API
    */
-  private async generateYamlFromRequest(request: string): Promise<string> {
+  private readonly generateYamlFromRequest = async (request: string): Promise<string> => {
     this.logger.debug('Generating YAML from natural language request');
 
     try {
       const response = await axios.post(
         this.yamlApiUrl,
         { request },
-        { 
+        {
           headers: { 'Content-Type': 'application/json' },
           timeout: 30000 // 30 second timeout
         }
       );
 
       if (!response.data?.yaml) {
-        this.logger.error('Invalid YAML API response', { responseData: response.data });
+        this.logger.error('Invalid YAML API response', undefined, {
+        responseData: response.data,
+      });
         throw new Error('Invalid YAML response structure from generator API');
       }
 
       this.logger.debug('YAML generated successfully from natural language request');
       return response.data.yaml;
     } catch (error) {
-      this.logger.error('Failed to generate YAML from request', error);
+      this.logger.error(
+        'Failed to generate YAML from request',
+        error as Error,
+      );
       
       if (axios.isAxiosError(error)) {
         if (error.code === 'ECONNABORTED') {
-          throw new NetworkError('YAML generation request timed out', { request, error });
+          throw new NetworkError('YAML generation request timed out', { error, request });
         }
         if (error.response) {
           throw new NetworkError(
-            `YAML API returned ${error.response.status}: ${error.response.statusText}`,
-            { request, response: error.response.data, error }
+            `YAML API returned ${String(error.response.status)}: ${error.response.statusText}`,
+            { error, request, response: String(error.response.data) }
           );
         }
       }
 
       throw new NetworkError(
         `YAML generation failed: ${error instanceof Error ? error.message : String(error)}`,
-        { request, error }
+        { error, request }
       );
     }
-  }
+  };
 
   /**
    * Load YAML content from file
    */
-  private async loadYamlFromFile(yamlPath: string): Promise<string> {
+  private readonly loadYamlFromFile = async (yamlPath: string): Promise<string> => {
     this.logger.debug('Loading YAML from file', { path: yamlPath });
 
     try {
@@ -298,21 +308,23 @@ export class SpheroNService {
       this.logger.debug('YAML loaded successfully from file');
       return content;
     } catch (error) {
-      this.logger.error('Failed to read YAML file', error, { path: yamlPath });
+      this.logger.error('Failed to read YAML file', error as Error, {
+        path: yamlPath,
+      });
       
       throw new FileSystemError(
         `Failed to read YAML file: ${error instanceof Error ? error.message : String(error)}`,
-        { path: yamlPath, error }
+        { error, path: yamlPath }
       );
     }
-  }
+  };
 
   /**
    * Parse environment variables from YAML content
    */
-  private parseYamlEnvironmentVariables(yamlContent: string): IEnvironmentVariables {
+  private readonly parseYamlEnvironmentVariables = (yamlContent: string): IEnvironmentVariables => {
     try {
-      const envMatch = yamlContent.match(/env:\n([\s\S]*?)(?=\n\S|$)/);
+      const envMatch = /env:\n([\s\S]*?)(?=\n\S|$)/.exec(yamlContent);
       if (!envMatch) {
         return {};
       }
@@ -321,7 +333,7 @@ export class SpheroNService {
       const envVars: IEnvironmentVariables = {};
 
       envLines.forEach(line => {
-        const match = line.trim().match(/-\s*(.*?)\s*=\s*(.*)/);
+        const match = /-\s*(.*?)\s*=\s*(.*)/.exec(line.trim());
         if (match) {
           envVars[match[1]] = match[2];
         }
@@ -333,15 +345,17 @@ export class SpheroNService {
 
       return envVars;
     } catch (error) {
-      this.logger.warn('Failed to parse YAML environment variables', { error });
+      this.logger.warn('Failed to parse YAML environment variables', {
+        error,
+      });
       return {};
     }
-  }
+  };
 
   /**
    * Convert token units from base units to human-readable format
    */
-  private convertTokenUnits(value: string, decimals: number): string {
+  private readonly convertTokenUnits = (value: string, decimals: number): string => {
     try {
       const bigIntValue = BigInt(value);
       const divisor = BigInt(10 ** decimals);
@@ -351,52 +365,59 @@ export class SpheroNService {
       
       const fractionalStr = fractionalPart.toString().padStart(decimals, '0').replace(/0+$/, '');
       
-      return fractionalStr ? `${wholePart}.${fractionalStr}` : wholePart.toString();
+      return fractionalStr ? `${String(wholePart)}.${fractionalStr}` : wholePart.toString();
     } catch (error) {
-      this.logger.warn('Failed to convert token units', { error, value, decimals });
+      this.logger.warn('Failed to convert token units', {
+        decimals,
+        error,
+        value,
+      });
       return value; // Return original value if conversion fails
     }
-  }
+  };
 
   /**
    * Safely serialize objects containing BigInt values
    */
-  private serializeBigIntValues(obj: unknown): ISerializedObject {
+  private readonly serializeBigIntValues = (obj: unknown): ISerializedObject => {
     return JSON.parse(JSON.stringify(obj, (key, value) =>
       typeof value === 'bigint' ? value.toString() : value
     ));
-  }
+  };
 
   /**
    * Safely extract string value from serialized object
    */
-  private getStringValue(obj: ISerializedObject, key: string): string | undefined {
+  private readonly getStringValue = (obj: ISerializedObject, key: string): string | undefined => {
     const value = obj[key];
     return typeof value === 'string' ? value : undefined;
-  }
+  };
 
   /**
    * Safely extract array value from serialized object
    */
-  private getArrayValue<T>(obj: ISerializedObject, key: string): T[] | undefined {
+  private readonly getArrayValue = (
+    obj: ISerializedObject,
+    key: string
+  ): string[] | undefined => {
     const value = obj[key];
-    return Array.isArray(value) ? value as T[] : undefined;
-  }
+    return Array.isArray(value) ? value.map(String) : undefined;
+  };
 
   /**
    * Safely extract object value from serialized object
    */
-  private getObjectValue(obj: ISerializedObject, key: string): Record<string, unknown> | undefined {
+  private readonly getObjectValue = (obj: ISerializedObject, key: string): Record<string, unknown> | undefined => {
     const value = obj[key];
     return (typeof value === 'object' && value !== null && !Array.isArray(value))
       ? value as Record<string, unknown>
       : undefined;
-  }
+  };
 }
 
 /**
  * Create Spheron service instance
  */
-export function createSpheroNService(config: ISpheroNSDKConfig): SpheroNService {
+export const createSpheroNService = (config: ISpheroNSDKConfig): SpheroNService => {
   return new SpheroNService(config);
-}
+};
