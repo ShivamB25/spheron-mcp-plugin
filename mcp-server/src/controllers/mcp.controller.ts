@@ -4,11 +4,12 @@
  */
 
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { 
-  CallToolRequestSchema, 
-  ErrorCode, 
-  ListToolsRequestSchema, 
-  McpError 
+import {
+  type CallToolRequest,
+  CallToolRequestSchema,
+  ErrorCode,
+  ListToolsRequestSchema,
+  McpError
 } from '@modelcontextprotocol/sdk/types.js';
 
 import { 
@@ -40,26 +41,22 @@ export class McpController {
   /**
    * Register handlers with MCP server
    */
-  public registerHandlers(server: Server): void {
+  public registerHandlers = (server: Server): void => {
     this.logger.info('Registering MCP handlers');
 
     // Register list tools handler
-    server.setRequestHandler(ListToolsRequestSchema, async () => {
-      return this.listTools();
-    });
+    server.setRequestHandler(ListToolsRequestSchema, () => this.listTools());
 
     // Register call tool handler
-    server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      return this.callTool(request);
-    });
+    server.setRequestHandler(CallToolRequestSchema, (request) => this.callTool(request));
 
     this.logger.info('MCP handlers registered successfully');
-  }
+  };
 
   /**
    * List available tools
    */
-  private async listTools() {
+  private readonly listTools = () => {
     this.logger.debug('Listing available tools');
 
     const tools = [
@@ -132,13 +129,13 @@ export class McpController {
 
     this.logger.debug('Tools listed successfully', { toolCount: tools.length });
     return { tools };
-  }
+  };
 
   /**
    * Handle tool call requests
-   * @param request - MCP SDK request object (must be `any` to match SDK's CallToolRequestSchema handler signature)
+   * @param request - MCP SDK request object
    */
-  private async callTool(request: any) {
+  private readonly callTool = async (request: CallToolRequest) => {
     const toolName = request.params.name;
     this.logger.info('Processing tool call', { toolName });
 
@@ -151,7 +148,7 @@ export class McpController {
         );
       }
 
-      const args = request.params.arguments || {};
+      const args = request.params.arguments ?? {};
       
       // Validate and transform arguments
       const validatedDto = await this.validationService.validateOperationArgs(args);
@@ -176,13 +173,14 @@ export class McpController {
           result = await this.spheronService.fetchLeaseDetails(validatedDto);
           break;
           
-        default:
+        default: {
           // This should never happen due to validation, but TypeScript requires it
           const exhaustiveCheck: never = validatedDto;
           throw new McpError(
             ErrorCode.MethodNotFound,
             `Unknown operation: ${(exhaustiveCheck as { operation: string }).operation}`
           );
+        }
       }
 
       // Create success response
@@ -223,15 +221,15 @@ export class McpController {
         `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
       );
     }
-  }
+  };
 }
 
 /**
  * Create MCP controller instance
  */
-export function createMcpController(
+export const createMcpController = (
   spheronService: SpheroNService,
   validationService: ValidationService
-): McpController {
+): McpController => {
   return new McpController(spheronService, validationService);
-}
+};
