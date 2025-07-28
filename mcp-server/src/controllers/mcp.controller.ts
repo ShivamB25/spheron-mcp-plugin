@@ -3,30 +3,28 @@
  * Following NestJS controller patterns with dependency injection
  */
 
+import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { 
   CallToolRequestSchema, 
-  ListToolsRequestSchema, 
   ErrorCode, 
+  ListToolsRequestSchema, 
   McpError 
 } from '@modelcontextprotocol/sdk/types.js';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import {
+
+import { 
+  isBaseError, 
+  toMcpError} from '../core/errors.js';
+import { getLogger } from '../core/logger.js';
+import type { SpheroNService } from '../services/spheron.service.js';
+import type { ValidationService } from '../services/validation.service.js';
+import type {
   McpApiResponse
 } from '../types/mcp.types.js';
-import {
+import type {
+  IDeploymentDetails,
   IDeploymentResult,
-  ITokenBalance,
   ILeaseDetails,
-  IDeploymentDetails
-} from '../types/spheron.types.js';
-import { SpheroNService } from '../services/spheron.service.js';
-import { ValidationService } from '../services/validation.service.js';
-import { 
-  toMcpError, 
-  createErrorResponse, 
-  isBaseError 
-} from '../core/errors.js';
-import { getLogger } from '../core/logger.js';
+  ITokenBalance} from '../types/spheron.types.js';
 
 /**
  * MCP Controller class
@@ -66,54 +64,16 @@ export class McpController {
 
     const tools = [
       {
-        name: 'spheron_operation',
         description: 'Perform operations with Spheron Protocol including deployment, balance checking, and lease management',
         inputSchema: {
-          type: 'object',
-          properties: {
-            operation: {
-              type: 'string',
-              enum: ['deploy_compute', 'fetch_balance', 'fetch_deployment_urls', 'fetch_lease_id'],
-              description: 'The operation to perform'
-            },
-            request: {
-              type: 'string',
-              description: 'Natural language request for deployment (deploy_compute only)'
-            },
-            yaml_content: {
-              type: 'string',
-              description: 'Direct YAML content for deployment (deploy_compute only)'
-            },
-            yaml_path: {
-              type: 'string',
-              description: 'Path to YAML file for deployment (deploy_compute only)'
-            },
-            token: {
-              type: 'string',
-              description: 'Token symbol (e.g., CST, USDC) for balance operations (fetch_balance only)'
-            },
-            wallet_address: {
-              type: 'string',
-              description: 'Wallet address to check (optional for fetch_balance)'
-            },
-            lease_id: {
-              type: 'string',
-              description: 'Lease/deployment ID (fetch_deployment_urls and fetch_lease_id only)'
-            },
-            provider_proxy_url: {
-              type: 'string',
-              description: 'Custom provider proxy URL (optional, defaults to configured value)'
-            }
-          },
-          required: ['operation'],
           oneOf: [
             {
-              properties: { operation: { const: 'deploy_compute' } },
               anyOf: [
                 { required: ['request'] },
                 { required: ['yaml_content'] },
                 { required: ['yaml_path'] }
-              ]
+              ],
+              properties: { operation: { const: 'deploy_compute' } }
             },
             {
               properties: { operation: { const: 'fetch_balance' } },
@@ -127,8 +87,46 @@ export class McpController {
               properties: { operation: { const: 'fetch_lease_id' } },
               required: ['lease_id']
             }
-          ]
-        }
+          ],
+          properties: {
+            lease_id: {
+              description: 'Lease/deployment ID (fetch_deployment_urls and fetch_lease_id only)',
+              type: 'string'
+            },
+            operation: {
+              description: 'The operation to perform',
+              enum: ['deploy_compute', 'fetch_balance', 'fetch_deployment_urls', 'fetch_lease_id'],
+              type: 'string'
+            },
+            provider_proxy_url: {
+              description: 'Custom provider proxy URL (optional, defaults to configured value)',
+              type: 'string'
+            },
+            request: {
+              description: 'Natural language request for deployment (deploy_compute only)',
+              type: 'string'
+            },
+            token: {
+              description: 'Token symbol (e.g., CST, USDC) for balance operations (fetch_balance only)',
+              type: 'string'
+            },
+            wallet_address: {
+              description: 'Wallet address to check (optional for fetch_balance)',
+              type: 'string'
+            },
+            yaml_content: {
+              description: 'Direct YAML content for deployment (deploy_compute only)',
+              type: 'string'
+            },
+            yaml_path: {
+              description: 'Path to YAML file for deployment (deploy_compute only)',
+              type: 'string'
+            }
+          },
+          required: ['operation'],
+          type: 'object'
+        },
+        name: 'spheron_operation'
       }
     ];
 
@@ -189,19 +187,19 @@ export class McpController {
 
       // Create success response
       const response: McpApiResponse = {
-        success: true,
-        data: result
+        data: result,
+        success: true
       };
 
       this.logger.info('Tool call completed successfully', {
-        toolName,
-        operation: validatedDto.operation
+        operation: validatedDto.operation,
+        toolName
       });
 
       return {
         content: [{
-          type: 'text' as const,
-          text: JSON.stringify(response, null, 2)
+          text: JSON.stringify(response, null, 2),
+          type: 'text' as const
         }]
       };
 
