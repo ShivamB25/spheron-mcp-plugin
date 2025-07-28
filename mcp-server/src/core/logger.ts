@@ -108,33 +108,44 @@ export class Logger {
   /**
    * Log error message
    */
-  public error(message: string, error?: Error | unknown, context?: string): void {
-    const logContext = context || this.context;
-    const errorMeta = error instanceof Error ? { 
+  public error(message: string, error?: Error | unknown, meta?: Record<string, unknown> | string): void {
+    const logContext = typeof meta === 'string' ? meta : this.context;
+    const metadata = typeof meta === 'object' ? meta : {};
+    
+    const errorMeta = error instanceof Error ? {
       stack: error.stack,
-      name: error.name 
-    } : { error };
+      name: error.name
+    } : error ? { error } : {};
 
-    this.logger.error(message, { 
+    this.logger.error(message, {
       context: logContext,
-      ...errorMeta 
+      ...errorMeta,
+      ...metadata
     });
   }
 
   /**
    * Log warning message
    */
-  public warn(message: string, context?: string): void {
-    const logContext = context || this.context;
-    this.logger.warn(message, { context: logContext });
+  public warn(message: string, meta?: Record<string, unknown> | string): void {
+    const logContext = typeof meta === 'string' ? meta : this.context;
+    const metadata = typeof meta === 'object' ? meta : {};
+    this.logger.warn(message, {
+      context: logContext,
+      ...metadata
+    });
   }
 
   /**
    * Log info message
    */
-  public info(message: string, context?: string): void {
-    const logContext = context || this.context;
-    this.logger.info(message, { context: logContext });
+  public info(message: string, meta?: Record<string, unknown> | string): void {
+    const logContext = typeof meta === 'string' ? meta : this.context;
+    const metadata = typeof meta === 'object' ? meta : {};
+    this.logger.info(message, {
+      context: logContext,
+      ...metadata
+    });
   }
 
   /**

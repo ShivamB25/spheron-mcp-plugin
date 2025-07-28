@@ -73,7 +73,7 @@ export interface IYamlConfig {
  * Environment variables parsed from YAML
  */
 export interface IEnvironmentVariables {
-  readonly [key: string]: string;
+  [key: string]: string;
 }
 
 /**

@@ -23,7 +23,7 @@ export class BaseOperationDto {
  */
 export class DeployComputeDto extends BaseOperationDto {
   @IsEnum(['deploy_compute'])
-  operation!: 'deploy_compute';
+  declare operation: 'deploy_compute';
 
   @ValidateIf(o => !o.yaml_content && !o.yaml_path)
   @IsString()
@@ -46,7 +46,7 @@ export class DeployComputeDto extends BaseOperationDto {
  */
 export class FetchBalanceDto extends BaseOperationDto {
   @IsEnum(['fetch_balance'])
-  operation!: 'fetch_balance';
+  declare operation: 'fetch_balance';
 
   @IsString()
   @IsNotEmpty()
@@ -62,7 +62,7 @@ export class FetchBalanceDto extends BaseOperationDto {
  */
 export class FetchDeploymentUrlsDto extends BaseOperationDto {
   @IsEnum(['fetch_deployment_urls'])
-  operation!: 'fetch_deployment_urls';
+  declare operation: 'fetch_deployment_urls';
 
   @IsString()
   @IsNotEmpty()
@@ -74,7 +74,7 @@ export class FetchDeploymentUrlsDto extends BaseOperationDto {
  */
 export class FetchLeaseIdDto extends BaseOperationDto {
   @IsEnum(['fetch_lease_id'])
-  operation!: 'fetch_lease_id';
+  declare operation: 'fetch_lease_id';
 
   @IsString()
   @IsNotEmpty()
