@@ -4,21 +4,25 @@
  */
 
 import 'reflect-metadata';
-import { validate, ValidationError } from 'class-validator';
-import { plainToClass, ClassConstructor } from 'class-transformer';
-import { 
-  OperationDto,
-  DeployComputeDto,
-  FetchBalanceDto,
-  FetchDeploymentUrlsDto,
-  FetchLeaseIdDto,
-  EnvironmentConfigDto,
-  IValidationResult,
-  IValidationError
-} from '../types/validation.types.js';
-import { SpheroNOperation } from '../types/spheron.types.js';
+
+import type { ClassConstructor} from 'class-transformer';
+import {plainToClass } from 'class-transformer';
+import type { ValidationError } from 'class-validator';
+import { validate } from 'class-validator';
+
 import { ValidationError as CustomValidationError } from '../core/errors.js';
 import { getLogger } from '../core/logger.js';
+import type { SpheroNOperation } from '../types/spheron.types.js';
+import type {
+  IValidationError,
+  IValidationResult,
+  OperationDto} from '../types/validation.types.js';
+import { 
+  DeployComputeDto,
+  EnvironmentConfigDto,
+  FetchBalanceDto,
+  FetchDeploymentUrlsDto,
+  FetchLeaseIdDto} from '../types/validation.types.js';
 
 /**
  * Validation service class
@@ -29,7 +33,7 @@ export class ValidationService {
   /**
    * Validate operation arguments based on operation type
    */
-  public async validateOperationArgs(args: Record<string, unknown>): Promise<OperationDto> {
+  public validateOperationArgs = async (args: Record<string, unknown>): Promise<OperationDto> => {
     this.logger.debug('Validating operation arguments', { operation: args.operation });
 
     if (!args.operation) {
@@ -54,7 +58,7 @@ export class ValidationService {
         DtoClass = FetchLeaseIdDto;
         break;
       default:
-        throw new CustomValidationError(`Unknown operation: ${operation}`);
+        throw new CustomValidationError(`Unknown operation: ${String(operation)}`);
     }
 
     // Transform and validate
@@ -62,40 +66,44 @@ export class ValidationService {
     const validationResult = await this.validateDto(dto);
 
     if (!validationResult.isValid) {
-      const errorMessages = validationResult.errors.map(error => 
+      const errorMessages = validationResult.errors.map(error =>
         `${error.property}: ${Object.values(error.constraints).join(', ')}`
       );
       
-      this.logger.error('Validation failed', { 
-        operation,
-        errors: errorMessages 
-      });
+      this.logger.error(
+        'Validation failed',
+        new CustomValidationError(errorMessages.join('; ')),
+        { operation },
+      );
 
       throw new CustomValidationError(
         `Validation failed: ${errorMessages.join('; ')}`,
-        { operation, errors: validationResult.errors }
+        { errors: validationResult.errors, operation }
       );
     }
 
     this.logger.debug('Validation successful', { operation });
     return dto;
-  }
+  };
 
   /**
    * Validate environment configuration
    */
-  public async validateEnvironmentConfig(env: Record<string, unknown>): Promise<EnvironmentConfigDto> {
+  public validateEnvironmentConfig = async (env: Record<string, unknown>): Promise<EnvironmentConfigDto> => {
     this.logger.debug('Validating environment configuration');
 
     const dto = plainToClass(EnvironmentConfigDto, env);
     const validationResult = await this.validateDto(dto);
 
     if (!validationResult.isValid) {
-      const errorMessages = validationResult.errors.map(error => 
+      const errorMessages = validationResult.errors.map(error =>
         `${error.property}: ${Object.values(error.constraints).join(', ')}`
       );
 
-      this.logger.error('Environment validation failed', { errors: errorMessages });
+      this.logger.error(
+        'Environment validation failed',
+        new CustomValidationError(errorMessages.join('; ')),
+      );
       
       throw new CustomValidationError(
         `Environment validation failed: ${errorMessages.join('; ')}`,
@@ -105,49 +113,49 @@ export class ValidationService {
 
     this.logger.debug('Environment validation successful');
     return dto;
-  }
+  };
 
   /**
    * Generic DTO validation method
    */
-  private async validateDto<T extends object>(dto: T): Promise<IValidationResult> {
+  private readonly validateDto = async (dto: object): Promise<IValidationResult> => {
     try {
       const errors = await validate(dto);
       
       if (errors.length === 0) {
-        return { isValid: true, errors: [] };
+        return { errors: [], isValid: true };
       }
 
       const validationErrors: IValidationError[] = errors.map(this.mapValidationError);
       
       return {
-        isValid: false,
-        errors: validationErrors
+        errors: validationErrors,
+        isValid: false
       };
     } catch (error) {
-      this.logger.error('Validation process failed', error);
+      this.logger.error('Validation process failed', error as Error);
       throw new CustomValidationError(
         `Validation process failed: ${error instanceof Error ? error.message : String(error)}`,
         { originalError: error }
       );
     }
-  }
+  };
 
   /**
    * Map class-validator ValidationError to our custom format
    */
-  private mapValidationError(error: ValidationError): IValidationError {
+  private readonly mapValidationError = (error: ValidationError): IValidationError => {
     return {
+      constraints: error.constraints ?? {},
       property: error.property,
-      value: error.value,
-      constraints: error.constraints || {}
+      value: error.value
     };
-  }
+  };
 
   /**
    * Validate specific deploy compute arguments
    */
-  public validateDeployComputeArgs(args: Record<string, unknown>): void {
+  public validateDeployComputeArgs = (args: Record<string, unknown>): void => {
     const { request, yaml_content, yaml_path } = args;
     
     // Ensure exactly one of the three input methods is provided
@@ -164,12 +172,12 @@ export class ValidationService {
         'Cannot provide multiple input methods. Choose one of: request, yaml_content, or yaml_path'
       );
     }
-  }
+  };
 
   /**
    * Validate string is not empty after trimming
    */
-  public validateNonEmptyString(value: unknown, fieldName: string): string {
+  public validateNonEmptyString = (value: unknown, fieldName: string): string => {
     if (typeof value !== 'string') {
       throw new CustomValidationError(`${fieldName} must be a string`);
     }
@@ -180,12 +188,12 @@ export class ValidationService {
     }
 
     return trimmed;
-  }
+  };
 
   /**
    * Validate lease ID format (basic validation)
    */
-  public validateLeaseId(leaseId: unknown): string {
+  public validateLeaseId = (leaseId: unknown): string => {
     const validatedId = this.validateNonEmptyString(leaseId, 'lease_id');
     
     // Basic format validation - you might want to add more specific rules
@@ -194,12 +202,12 @@ export class ValidationService {
     }
 
     return validatedId;
-  }
+  };
 
   /**
    * Validate token symbol
    */
-  public validateTokenSymbol(token: unknown): string {
+  public validateTokenSymbol = (token: unknown): string => {
     const validatedToken = this.validateNonEmptyString(token, 'token');
     
     // Basic token validation
@@ -210,12 +218,12 @@ export class ValidationService {
     }
 
     return validatedToken;
-  }
+  };
 
   /**
    * Validate wallet address (basic validation)
    */
-  public validateWalletAddress(address: unknown): string | undefined {
+  public validateWalletAddress = (address: unknown): string | undefined => {
     if (address === undefined || address === null) {
       return undefined;
     }
@@ -228,12 +236,12 @@ export class ValidationService {
     }
 
     return validatedAddress;
-  }
+  };
 }
 
 /**
  * Create validation service instance
  */
-export function createValidationService(): ValidationService {
+export const createValidationService = (): ValidationService => {
   return new ValidationService();
-}
+};
