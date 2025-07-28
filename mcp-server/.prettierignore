@@ -1,0 +1,27 @@
+# Ignore artifacts
+node_modules/
+dist/
+build/
+coverage/
+.bun/
+
+# Ignore log files
+*.log
+
+# Ignore package lock files (though Prettier usually doesn't touch them)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lockb
+
+# Ignore Docker files
+Dockerfile*
+docker-compose*.yml
+
+# Ignore frontend directory
+frontend/
+
+# Add any other files or directories you want Prettier to ignore
+# For example, specific auto-generated files or vendor libraries
+# vendor/
+# *.generated.ts
