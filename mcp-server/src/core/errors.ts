@@ -17,7 +17,7 @@ export abstract class BaseError extends Error {
     message: string,
     code: string,
     statusCode: number,
-    context?: Record<string, unknown>
+    context?: Record<string, unknown>,
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -155,7 +155,9 @@ export const getErrorMessage = (error: unknown): string => {
 /**
  * Create a standardized error response
  */
-export const createErrorResponse = (error: unknown): {
+export const createErrorResponse = (
+  error: unknown,
+): {
   code?: string;
   context?: Record<string, unknown>;
   error: string;

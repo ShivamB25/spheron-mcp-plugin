@@ -4,7 +4,7 @@
 
 import { IsEnum, IsNotEmpty, IsOptional, IsString, ValidateIf } from 'class-validator';
 
-import { SpheroNNetwork,SpheroNOperation } from './spheron.types.js';
+import { SpheroNNetwork, SpheroNOperation } from './spheron.types.js';
 
 /**
  * Base DTO for all Spheron operations
@@ -26,17 +26,17 @@ export class DeployComputeDto extends BaseOperationDto {
   @IsEnum(['deploy_compute'])
   declare operation: 'deploy_compute';
 
-  @ValidateIf(o => !o.yaml_content && !o.yaml_path)
+  @ValidateIf((o) => !o.yaml_content && !o.yaml_path)
   @IsString()
   @IsNotEmpty()
   request?: string;
 
-  @ValidateIf(o => !o.request && !o.yaml_path)
+  @ValidateIf((o) => !o.request && !o.yaml_path)
   @IsString()
   @IsNotEmpty()
   yaml_content?: string;
 
-  @ValidateIf(o => !o.request && !o.yaml_content)
+  @ValidateIf((o) => !o.request && !o.yaml_content)
   @IsString()
   @IsNotEmpty()
   yaml_path?: string;
@@ -113,10 +113,10 @@ export class EnvironmentConfigDto {
 /**
  * Union type for all operation DTOs
  */
-export type OperationDto = 
-  | DeployComputeDto 
-  | FetchBalanceDto 
-  | FetchDeploymentUrlsDto 
+export type OperationDto =
+  | DeployComputeDto
+  | FetchBalanceDto
+  | FetchDeploymentUrlsDto
   | FetchLeaseIdDto;
 
 /**

@@ -7,11 +7,12 @@ import { SpheronSDK } from '@spheron/protocol-sdk';
 import axios from 'axios';
 import { readFile } from 'fs/promises';
 
-import { 
-  FileSystemError, 
-  NetworkError, 
-  SpheroNError, 
-  YamlProcessingError} from '../core/errors.js';
+import {
+  FileSystemError,
+  NetworkError,
+  SpheroNError,
+  YamlProcessingError,
+} from '../core/errors.js';
 import { getLogger } from '../core/logger.js';
 import type { ISerializedObject } from '../types/mcp-request.types.js';
 import type {
@@ -20,12 +21,13 @@ import type {
   IEnvironmentVariables,
   ILeaseDetails,
   ISpheroNSDKConfig,
-  ITokenBalance} from '../types/spheron.types.js';
-import type { 
-  DeployComputeDto, 
-  FetchBalanceDto, 
-  FetchDeploymentUrlsDto, 
-  FetchLeaseIdDto 
+  ITokenBalance,
+} from '../types/spheron.types.js';
+import type {
+  DeployComputeDto,
+  FetchBalanceDto,
+  FetchDeploymentUrlsDto,
+  FetchLeaseIdDto,
 } from '../types/validation.types.js';
 
 /**
@@ -40,10 +42,13 @@ export class SpheroNService {
     try {
       this.logger.info('Initializing Spheron SDK', {
         hasPrivateKey: !!config.privateKey,
-        network: config.network
+        network: config.network,
       });
 
-      this.sdk = new SpheronSDK(config.network, config.privateKey);
+      this.sdk = new SpheronSDK({
+        networkType: config.network,
+        privateKey: config.privateKey,
+      });
       this.yamlApiUrl = config.yamlApiUrl ?? '';
 
       this.logger.info('Spheron SDK initialized successfully');
@@ -51,7 +56,7 @@ export class SpheroNService {
       this.logger.error('Failed to initialize Spheron SDK', error as Error);
       throw new SpheroNError(
         `Failed to initialize Spheron SDK: ${error instanceof Error ? error.message : String(error)}`,
-        { config: { network: config.network }, error }
+        { config: { network: config.network }, error },
       );
     }
   }
@@ -65,7 +70,7 @@ export class SpheroNService {
     try {
       // Get YAML content based on input method
       const yamlContent = await this.getYamlContent(dto);
-      
+
       // Extract environment variables from YAML
       const environment = this.parseYamlEnvironmentVariables(yamlContent);
 
@@ -73,7 +78,7 @@ export class SpheroNService {
       this.logger.debug('Creating deployment with Spheron SDK');
       const deploymentResult = await this.sdk.deployment.createDeployment(
         yamlContent,
-        dto.provider_proxy_url ?? ''
+        dto.provider_proxy_url ?? '',
       );
 
       // Handle BigInt serialization safely
@@ -84,36 +89,40 @@ export class SpheroNService {
         environment,
         leaseId,
         message: `Deployment created successfully with lease ID: ${leaseId}`,
-        success: true
+        success: true,
       };
 
-      this.logger.info('Compute deployment completed successfully', { 
-        leaseId: result.leaseId 
+      this.logger.info('Compute deployment completed successfully', {
+        leaseId: result.leaseId,
       });
 
       return result;
     } catch (error) {
       this.logger.error('Compute deployment failed', error as Error);
-      
-      if (error instanceof SpheroNError || error instanceof NetworkError || 
-          error instanceof YamlProcessingError || error instanceof FileSystemError) {
+
+      if (
+        error instanceof SpheroNError ||
+        error instanceof NetworkError ||
+        error instanceof YamlProcessingError ||
+        error instanceof FileSystemError
+      ) {
         throw error;
       }
 
       throw new SpheroNError(
         `Deployment failed: ${error instanceof Error ? error.message : String(error)}`,
-        { dto, error }
+        { dto, error },
       );
     }
-  }
+  };
 
   /**
    * Fetch user wallet balance for specified token
    */
   public fetchBalance = async (dto: FetchBalanceDto): Promise<ITokenBalance> => {
-    this.logger.info('Fetching wallet balance', { 
+    this.logger.info('Fetching wallet balance', {
       hasWalletAddress: !!dto.wallet_address,
-      token: dto.token 
+      token: dto.token,
     });
 
     try {
@@ -124,13 +133,13 @@ export class SpheroNService {
       const result: ITokenBalance = {
         lockedBalance: this.convertTokenUnits(balance.lockedBalance.toString(), decimals),
         token: balance.token,
-        unlockedBalance: this.convertTokenUnits(balance.unlockedBalance.toString(), decimals)
+        unlockedBalance: this.convertTokenUnits(balance.unlockedBalance.toString(), decimals),
       };
 
-      this.logger.info('Balance fetched successfully', { 
+      this.logger.info('Balance fetched successfully', {
         lockedBalance: result.lockedBalance,
         token: result.token,
-        unlockedBalance: result.unlockedBalance
+        unlockedBalance: result.unlockedBalance,
       });
 
       return result;
@@ -138,13 +147,13 @@ export class SpheroNService {
       this.logger.error('Failed to fetch balance', error as Error, {
         token: dto.token,
       });
-      
+
       throw new SpheroNError(
         `Failed to fetch balance for token ${dto.token}: ${error instanceof Error ? error.message : String(error)}`,
-        { dto, error }
+        { dto, error },
       );
     }
-  }
+  };
 
   /**
    * Fetch deployment details and URLs
@@ -155,7 +164,7 @@ export class SpheroNService {
     try {
       const deploymentDetails = await this.sdk.deployment.getDeployment(
         dto.lease_id,
-        dto.provider_proxy_url ?? ''
+        dto.provider_proxy_url ?? '',
       );
 
       // Handle BigInt serialization safely
@@ -166,12 +175,12 @@ export class SpheroNService {
         logs: this.getArrayValue(safeDetails, 'logs'),
         services: this.getObjectValue(safeDetails, 'services'),
         status: this.getStringValue(safeDetails, 'status') ?? 'unknown',
-        urls: this.getArrayValue(safeDetails, 'urls')
+        urls: this.getArrayValue(safeDetails, 'urls'),
       };
 
       this.logger.info('Deployment URLs fetched successfully', {
         leaseId: result.leaseId,
-        urlCount: result.urls?.length ?? 0
+        urlCount: result.urls?.length ?? 0,
       });
 
       return result;
@@ -179,13 +188,13 @@ export class SpheroNService {
       this.logger.error('Failed to fetch deployment URLs', error as Error, {
         leaseId: dto.lease_id,
       });
-      
+
       throw new SpheroNError(
         `Failed to fetch deployment URLs for lease ${dto.lease_id}: ${error instanceof Error ? error.message : String(error)}`,
-        { dto, error }
+        { dto, error },
       );
     }
-  }
+  };
 
   /**
    * Fetch detailed lease information
@@ -206,12 +215,12 @@ export class SpheroNService {
         provider: this.getStringValue(safeDetails, 'provider') ?? '',
         specifications: this.getObjectValue(safeDetails, 'specifications'),
         status: this.getStringValue(safeDetails, 'status') ?? 'unknown',
-        tenant: this.getStringValue(safeDetails, 'tenant') ?? ''
+        tenant: this.getStringValue(safeDetails, 'tenant') ?? '',
       };
 
-      this.logger.info('Lease details fetched successfully', { 
+      this.logger.info('Lease details fetched successfully', {
         leaseId: result.leaseId,
-        status: result.status
+        status: result.status,
       });
 
       return result;
@@ -219,13 +228,13 @@ export class SpheroNService {
       this.logger.error('Failed to fetch lease details', error as Error, {
         leaseId: dto.lease_id,
       });
-      
+
       throw new SpheroNError(
         `Failed to fetch lease details for ${dto.lease_id}: ${error instanceof Error ? error.message : String(error)}`,
-        { dto, error }
+        { dto, error },
       );
     }
-  }
+  };
 
   /**
    * Get YAML content based on input method (natural language, direct content, or file)
@@ -234,12 +243,12 @@ export class SpheroNService {
     if (dto.request) {
       return this.generateYamlFromRequest(dto.request);
     }
-    
+
     if (dto.yaml_content) {
       this.logger.debug('Using provided YAML content');
       return dto.yaml_content;
     }
-    
+
     if (dto.yaml_path) {
       return this.loadYamlFromFile(dto.yaml_path);
     }
@@ -259,25 +268,22 @@ export class SpheroNService {
         { request },
         {
           headers: { 'Content-Type': 'application/json' },
-          timeout: 30000 // 30 second timeout
-        }
+          timeout: 30000, // 30 second timeout
+        },
       );
 
       if (!response.data?.yaml) {
         this.logger.error('Invalid YAML API response', undefined, {
-        responseData: response.data,
-      });
+          responseData: response.data,
+        });
         throw new Error('Invalid YAML response structure from generator API');
       }
 
       this.logger.debug('YAML generated successfully from natural language request');
       return response.data.yaml;
     } catch (error) {
-      this.logger.error(
-        'Failed to generate YAML from request',
-        error as Error,
-      );
-      
+      this.logger.error('Failed to generate YAML from request', error as Error);
+
       if (axios.isAxiosError(error)) {
         if (error.code === 'ECONNABORTED') {
           throw new NetworkError('YAML generation request timed out', { error, request });
@@ -285,14 +291,14 @@ export class SpheroNService {
         if (error.response) {
           throw new NetworkError(
             `YAML API returned ${String(error.response.status)}: ${error.response.statusText}`,
-            { error, request, response: String(error.response.data) }
+            { error, request, response: String(error.response.data) },
           );
         }
       }
 
       throw new NetworkError(
         `YAML generation failed: ${error instanceof Error ? error.message : String(error)}`,
-        { error, request }
+        { error, request },
       );
     }
   };
@@ -311,10 +317,10 @@ export class SpheroNService {
       this.logger.error('Failed to read YAML file', error as Error, {
         path: yamlPath,
       });
-      
+
       throw new FileSystemError(
         `Failed to read YAML file: ${error instanceof Error ? error.message : String(error)}`,
-        { error, path: yamlPath }
+        { error, path: yamlPath },
       );
     }
   };
@@ -332,7 +338,7 @@ export class SpheroNService {
       const envLines = envMatch[1].split('\n');
       const envVars: IEnvironmentVariables = {};
 
-      envLines.forEach(line => {
+      envLines.forEach((line) => {
         const match = /-\s*(.*?)\s*=\s*(.*)/.exec(line.trim());
         if (match) {
           envVars[match[1]] = match[2];
@@ -340,7 +346,7 @@ export class SpheroNService {
       });
 
       this.logger.debug('Parsed environment variables from YAML', {
-        count: Object.keys(envVars).length
+        count: Object.keys(envVars).length,
       });
 
       return envVars;
@@ -359,12 +365,12 @@ export class SpheroNService {
     try {
       const bigIntValue = BigInt(value);
       const divisor = BigInt(10 ** decimals);
-      
+
       const wholePart = bigIntValue / divisor;
       const fractionalPart = bigIntValue % divisor;
-      
+
       const fractionalStr = fractionalPart.toString().padStart(decimals, '0').replace(/0+$/, '');
-      
+
       return fractionalStr ? `${String(wholePart)}.${fractionalStr}` : wholePart.toString();
     } catch (error) {
       this.logger.warn('Failed to convert token units', {
@@ -380,9 +386,9 @@ export class SpheroNService {
    * Safely serialize objects containing BigInt values
    */
   private readonly serializeBigIntValues = (obj: unknown): ISerializedObject => {
-    return JSON.parse(JSON.stringify(obj, (key, value) =>
-      typeof value === 'bigint' ? value.toString() : value
-    ));
+    return JSON.parse(
+      JSON.stringify(obj, (_key, value) => (typeof value === 'bigint' ? value.toString() : value)),
+    );
   };
 
   /**
@@ -396,10 +402,7 @@ export class SpheroNService {
   /**
    * Safely extract array value from serialized object
    */
-  private readonly getArrayValue = (
-    obj: ISerializedObject,
-    key: string
-  ): string[] | undefined => {
+  private readonly getArrayValue = (obj: ISerializedObject, key: string): string[] | undefined => {
     const value = obj[key];
     return Array.isArray(value) ? value.map(String) : undefined;
   };
@@ -407,10 +410,13 @@ export class SpheroNService {
   /**
    * Safely extract object value from serialized object
    */
-  private readonly getObjectValue = (obj: ISerializedObject, key: string): Record<string, unknown> | undefined => {
+  private readonly getObjectValue = (
+    obj: ISerializedObject,
+    key: string,
+  ): Record<string, unknown> | undefined => {
     const value = obj[key];
-    return (typeof value === 'object' && value !== null && !Array.isArray(value))
-      ? value as Record<string, unknown>
+    return typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
       : undefined;
   };
 }

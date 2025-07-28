@@ -131,8 +131,8 @@ export interface IFetchLeaseIdArgs extends IBaseOperationArgs {
 /**
  * Union type for all operation arguments
  */
-export type OperationArgs = 
-  | IDeployComputeArgs 
-  | IFetchBalanceArgs 
-  | IFetchDeploymentUrlsArgs 
+export type OperationArgs =
+  | IDeployComputeArgs
+  | IFetchBalanceArgs
+  | IFetchDeploymentUrlsArgs
   | IFetchLeaseIdArgs;

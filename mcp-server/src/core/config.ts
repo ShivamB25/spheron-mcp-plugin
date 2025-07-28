@@ -4,7 +4,17 @@
  */
 
 import { plainToClass, Transform } from 'class-transformer';
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Max,Min,validateSync, ValidationError  } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  validateSync,
+  ValidationError,
+} from 'class-validator';
 import dotenv from 'dotenv';
 
 import {
@@ -13,7 +23,8 @@ import {
   IDefaultConfig,
   IEnvironmentConfig,
   ILoggerConfig,
-  IServerConfig} from '../types/config.types.js';
+  IServerConfig,
+} from '../types/config.types.js';
 import { SpheroNNetwork } from '../types/spheron.types.js';
 import { ConfigurationError } from './errors.js';
 
@@ -118,10 +129,10 @@ export class ConfigService {
     try {
       // Load environment configuration
       const envConfig = this.loadEnvironmentConfig();
-      
+
       // Load server configuration
       const serverConfig = this.loadServerConfig();
-      
+
       // Load logger configuration
       const loggerConfig = this.loadLoggerConfig();
 
@@ -133,7 +144,7 @@ export class ConfigService {
     } catch (error) {
       throw new ConfigurationError(
         `Failed to load configuration: ${error instanceof Error ? error.message : String(error)}`,
-        { error }
+        { error },
       );
     }
   };
@@ -158,7 +169,7 @@ export class ConfigService {
       const errorMessages = this.formatValidationErrors(errors);
       throw new ConfigurationError(
         `Environment configuration validation failed: ${errorMessages.join(', ')}`,
-        { errors: errorMessages }
+        { errors: errorMessages },
       );
     }
 
@@ -183,7 +194,7 @@ export class ConfigService {
       const errorMessages = this.formatValidationErrors(errors);
       throw new ConfigurationError(
         `Server configuration validation failed: ${errorMessages.join(', ')}`,
-        { errors: errorMessages }
+        { errors: errorMessages },
       );
     }
 
@@ -207,9 +218,7 @@ export class ConfigService {
    * Format validation errors into readable messages
    */
   private readonly formatValidationErrors = (errors: ValidationError[]): string[] => {
-    return errors.flatMap(error =>
-      Object.values(error.constraints ?? {})
-    );
+    return errors.flatMap((error) => Object.values(error.constraints ?? {}));
   };
 
   /**
@@ -277,7 +286,9 @@ export class ConfigService {
       };
     } catch (error) {
       return {
-        errors: [`Configuration validation failed: ${error instanceof Error ? error.message : String(error)}`],
+        errors: [
+          `Configuration validation failed: ${error instanceof Error ? error.message : String(error)}`,
+        ],
         isValid: false,
         warnings,
       };

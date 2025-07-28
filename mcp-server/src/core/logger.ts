@@ -33,10 +33,7 @@ export class Logger {
   /**
    * Get or create singleton logger instance
    */
-  public static getInstance = (
-    config: ILoggerConfig,
-    context?: string
-  ): Logger => {
+  public static getInstance = (config: ILoggerConfig, context?: string): Logger => {
     Logger.instance ??= new Logger(config, context);
     return Logger.instance;
   };
@@ -67,12 +64,14 @@ export class Logger {
             winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
             winston.format.errors({ stack: true }),
             winston.format.printf(({ context: logContext, level, message, timestamp, ...meta }) => {
-              const contextStr = logContext ? `[${typeof logContext === 'string' ? logContext : JSON.stringify(logContext)}]` : '';
+              const contextStr = logContext
+                ? `[${typeof logContext === 'string' ? logContext : JSON.stringify(logContext)}]`
+                : '';
               const metaStr = Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
               return `${String(timestamp)} [${String(level).toUpperCase()}] ${contextStr} ${String(message)}${metaStr}`;
             }),
           ),
-        })
+        }),
       );
     }
 
@@ -84,9 +83,9 @@ export class Logger {
           format: winston.format.combine(
             winston.format.timestamp(),
             winston.format.errors({ stack: true }),
-            winston.format.json()
+            winston.format.json(),
           ),
-        })
+        }),
       );
     }
 
@@ -94,7 +93,7 @@ export class Logger {
       exitOnError: false,
       format: winston.format.combine(
         winston.format.timestamp(),
-        winston.format.errors({ stack: true })
+        winston.format.errors({ stack: true }),
       ),
       level: config.level,
       transports,
@@ -104,10 +103,14 @@ export class Logger {
   /**
    * Log error message
    */
-  public error = (message: string, error?: unknown, meta?: Record<string, unknown> | string): void => {
+  public error = (
+    message: string,
+    error?: unknown,
+    meta?: Record<string, unknown> | string,
+  ): void => {
     const logContext = typeof meta === 'string' ? meta : this.context;
     const metadata = typeof meta === 'object' ? meta : {};
-    
+
     let errorMeta: Record<string, unknown> = {};
     if (error) {
       if (error instanceof Error) {
@@ -120,7 +123,7 @@ export class Logger {
     this.logger.error(message, {
       context: logContext,
       ...errorMeta,
-      ...metadata
+      ...metadata,
     });
   };
 
@@ -132,7 +135,7 @@ export class Logger {
     const metadata = typeof meta === 'object' ? meta : {};
     this.logger.warn(message, {
       context: logContext,
-      ...metadata
+      ...metadata,
     });
   };
 
@@ -144,7 +147,7 @@ export class Logger {
     const metadata = typeof meta === 'object' ? meta : {};
     this.logger.info(message, {
       context: logContext,
-      ...metadata
+      ...metadata,
     });
   };
 
@@ -156,7 +159,7 @@ export class Logger {
     const metadata = typeof meta === 'object' ? meta : {};
     this.logger.debug(message, {
       context: logContext,
-      ...metadata
+      ...metadata,
     });
   };
 
@@ -167,12 +170,12 @@ export class Logger {
     level: LogLevel,
     message: string,
     meta?: Record<string, unknown>,
-    context?: string
+    context?: string,
   ): void => {
     const logContext = context ?? this.context;
     this.logger.log(level, message, {
       context: logContext,
-      ...meta
+      ...meta,
     });
   };
 

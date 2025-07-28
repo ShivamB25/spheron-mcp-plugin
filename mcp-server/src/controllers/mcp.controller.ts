@@ -9,23 +9,20 @@ import {
   CallToolRequestSchema,
   ErrorCode,
   ListToolsRequestSchema,
-  McpError
+  McpError,
 } from '@modelcontextprotocol/sdk/types.js';
 
-import { 
-  isBaseError, 
-  toMcpError} from '../core/errors.js';
+import { isBaseError, toMcpError } from '../core/errors.js';
 import { getLogger } from '../core/logger.js';
 import type { SpheroNService } from '../services/spheron.service.js';
 import type { ValidationService } from '../services/validation.service.js';
-import type {
-  McpApiResponse
-} from '../types/mcp.types.js';
+import type { McpApiResponse } from '../types/mcp.types.js';
 import type {
   IDeploymentDetails,
   IDeploymentResult,
   ILeaseDetails,
-  ITokenBalance} from '../types/spheron.types.js';
+  ITokenBalance,
+} from '../types/spheron.types.js';
 
 /**
  * MCP Controller class
@@ -35,7 +32,7 @@ export class McpController {
 
   constructor(
     private readonly spheronService: SpheroNService,
-    private readonly validationService: ValidationService
+    private readonly validationService: ValidationService,
   ) {}
 
   /**
@@ -61,70 +58,72 @@ export class McpController {
 
     const tools = [
       {
-        description: 'Perform operations with Spheron Protocol including deployment, balance checking, and lease management',
+        description:
+          'Perform operations with Spheron Protocol including deployment, balance checking, and lease management',
         inputSchema: {
           oneOf: [
             {
               anyOf: [
                 { required: ['request'] },
                 { required: ['yaml_content'] },
-                { required: ['yaml_path'] }
+                { required: ['yaml_path'] },
               ],
-              properties: { operation: { const: 'deploy_compute' } }
+              properties: { operation: { const: 'deploy_compute' } },
             },
             {
               properties: { operation: { const: 'fetch_balance' } },
-              required: ['token']
+              required: ['token'],
             },
             {
               properties: { operation: { const: 'fetch_deployment_urls' } },
-              required: ['lease_id']
+              required: ['lease_id'],
             },
             {
               properties: { operation: { const: 'fetch_lease_id' } },
-              required: ['lease_id']
-            }
+              required: ['lease_id'],
+            },
           ],
           properties: {
             lease_id: {
               description: 'Lease/deployment ID (fetch_deployment_urls and fetch_lease_id only)',
-              type: 'string'
+              type: 'string',
             },
             operation: {
               description: 'The operation to perform',
               enum: ['deploy_compute', 'fetch_balance', 'fetch_deployment_urls', 'fetch_lease_id'],
-              type: 'string'
+              type: 'string',
             },
             provider_proxy_url: {
               description: 'Custom provider proxy URL (optional, defaults to configured value)',
-              type: 'string'
+              type: 'string',
             },
             request: {
               description: 'Natural language request for deployment (deploy_compute only)',
-              type: 'string'
+              type: 'string',
             },
             token: {
-              description: 'Token symbol (e.g., CST, USDC) for balance operations (fetch_balance only)',
-              type: 'string'
+              description:
+                'Token symbol (e.g., CST, USDC) for balance operations (fetch_balance only)',
+              type: 'string',
             },
             wallet_address: {
               description: 'Wallet address to check (optional for fetch_balance)',
-              type: 'string'
+              type: 'string',
             },
             yaml_content: {
               description: 'Direct YAML content for deployment (deploy_compute only)',
-              type: 'string'
+              type: 'string',
             },
             yaml_path: {
               description: 'Path to YAML file for deployment (deploy_compute only)',
-              type: 'string'
-            }
+              type: 'string',
+            },
           },
           required: ['operation'],
-          type: 'object'
+          type: 'object',
         },
-        name: 'spheron_operation'
-      }
+        name: 'spheron_operation',
+      },
     ];
 
     this.logger.debug('Tools listed successfully', { toolCount: tools.length });
@@ -142,43 +141,40 @@ export class McpController {
     try {
       // Validate tool name
       if (toolName !== 'spheron_operation') {
-        throw new McpError(
-          ErrorCode.MethodNotFound,
-          `Unknown tool: ${toolName}`
-        );
+        throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${toolName}`);
       }
 
       const args = request.params.arguments ?? {};
-      
+
       // Validate and transform arguments
       const validatedDto = await this.validationService.validateOperationArgs(args);
-      
+
       // Execute operation based on type - use union type for result
       let result: IDeploymentResult | ITokenBalance | IDeploymentDetails | ILeaseDetails;
-      
+
       switch (validatedDto.operation) {
         case 'deploy_compute':
           result = await this.spheronService.deployCompute(validatedDto);
           break;
-          
+
         case 'fetch_balance':
           result = await this.spheronService.fetchBalance(validatedDto);
           break;
-          
+
         case 'fetch_deployment_urls':
           result = await this.spheronService.fetchDeploymentUrls(validatedDto);
           break;
-          
+
         case 'fetch_lease_id':
           result = await this.spheronService.fetchLeaseDetails(validatedDto);
           break;
-          
+
         default: {
           // This should never happen due to validation, but TypeScript requires it
           const exhaustiveCheck: never = validatedDto;
           throw new McpError(
             ErrorCode.MethodNotFound,
-            `Unknown operation: ${(exhaustiveCheck as { operation: string }).operation}`
+            `Unknown operation: ${(exhaustiveCheck as { operation: string }).operation}`,
           );
         }
       }
@@ -186,21 +182,22 @@ export class McpController {
       // Create success response
       const response: McpApiResponse = {
         data: result,
-        success: true
+        success: true,
       };
 
       this.logger.info('Tool call completed successfully', {
         operation: validatedDto.operation,
-        toolName
+        toolName,
       });
 
       return {
-        content: [{
-          text: JSON.stringify(response, null, 2),
-          type: 'text' as const
-        }]
+        content: [
+          {
+            text: JSON.stringify(response, null, 2),
+            type: 'text' as const,
+          },
+        ],
       };
-
     } catch (error) {
       this.logger.error('Tool call failed', error, { toolName });
 
@@ -218,7 +215,7 @@ export class McpController {
       // Handle unknown errors
       throw new McpError(
         ErrorCode.InternalError,
-        `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+        `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   };
@@ -229,7 +226,7 @@ export class McpController {
  */
 export const createMcpController = (
   spheronService: SpheroNService,
-  validationService: ValidationService
+  validationService: ValidationService,
 ): McpController => {
   return new McpController(spheronService, validationService);
 };

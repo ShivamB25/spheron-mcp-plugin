@@ -5,8 +5,8 @@
 
 import 'reflect-metadata';
 
-import type { ClassConstructor} from 'class-transformer';
-import {plainToClass } from 'class-transformer';
+import type { ClassConstructor } from 'class-transformer';
+import { plainToClass } from 'class-transformer';
 import type { ValidationError } from 'class-validator';
 import { validate } from 'class-validator';
 
@@ -16,13 +16,15 @@ import type { SpheroNOperation } from '../types/spheron.types.js';
 import type {
   IValidationError,
   IValidationResult,
-  OperationDto} from '../types/validation.types.js';
-import { 
+  OperationDto,
+} from '../types/validation.types.js';
+import {
   DeployComputeDto,
   EnvironmentConfigDto,
   FetchBalanceDto,
   FetchDeploymentUrlsDto,
-  FetchLeaseIdDto} from '../types/validation.types.js';
+  FetchLeaseIdDto,
+} from '../types/validation.types.js';
 
 /**
  * Validation service class
@@ -66,20 +68,18 @@ export class ValidationService {
     const validationResult = await this.validateDto(dto);
 
     if (!validationResult.isValid) {
-      const errorMessages = validationResult.errors.map(error =>
-        `${error.property}: ${Object.values(error.constraints).join(', ')}`
-      );
-      
-      this.logger.error(
-        'Validation failed',
-        new CustomValidationError(errorMessages.join('; ')),
-        { operation },
+      const errorMessages = validationResult.errors.map(
+        (error) => `${error.property}: ${Object.values(error.constraints).join(', ')}`,
       );
 
-      throw new CustomValidationError(
-        `Validation failed: ${errorMessages.join('; ')}`,
-        { errors: validationResult.errors, operation }
-      );
+      this.logger.error('Validation failed', new CustomValidationError(errorMessages.join('; ')), {
+        operation,
+      });
+
+      throw new CustomValidationError(`Validation failed: ${errorMessages.join('; ')}`, {
+        errors: validationResult.errors,
+        operation,
+      });
     }
 
     this.logger.debug('Validation successful', { operation });
@@ -89,25 +89,27 @@ export class ValidationService {
   /**
    * Validate environment configuration
    */
-  public validateEnvironmentConfig = async (env: Record<string, unknown>): Promise<EnvironmentConfigDto> => {
+  public validateEnvironmentConfig = async (
+    env: Record<string, unknown>,
+  ): Promise<EnvironmentConfigDto> => {
     this.logger.debug('Validating environment configuration');
 
     const dto = plainToClass(EnvironmentConfigDto, env);
     const validationResult = await this.validateDto(dto);
 
     if (!validationResult.isValid) {
-      const errorMessages = validationResult.errors.map(error =>
-        `${error.property}: ${Object.values(error.constraints).join(', ')}`
+      const errorMessages = validationResult.errors.map(
+        (error) => `${error.property}: ${Object.values(error.constraints).join(', ')}`,
       );
 
       this.logger.error(
         'Environment validation failed',
         new CustomValidationError(errorMessages.join('; ')),
       );
-      
+
       throw new CustomValidationError(
         `Environment validation failed: ${errorMessages.join('; ')}`,
-        { errors: validationResult.errors }
+        { errors: validationResult.errors },
       );
     }
 
@@ -121,22 +123,22 @@ export class ValidationService {
   private readonly validateDto = async (dto: object): Promise<IValidationResult> => {
     try {
       const errors = await validate(dto);
-      
+
       if (errors.length === 0) {
         return { errors: [], isValid: true };
       }
 
       const validationErrors: IValidationError[] = errors.map(this.mapValidationError);
-      
+
       return {
         errors: validationErrors,
-        isValid: false
+        isValid: false,
       };
     } catch (error) {
       this.logger.error('Validation process failed', error as Error);
       throw new CustomValidationError(
         `Validation process failed: ${error instanceof Error ? error.message : String(error)}`,
-        { originalError: error }
+        { originalError: error },
       );
     }
   };
@@ -148,7 +150,7 @@ export class ValidationService {
     return {
       constraints: error.constraints ?? {},
       property: error.property,
-      value: error.value
+      value: error.value,
     };
   };
 
@@ -157,19 +159,19 @@ export class ValidationService {
    */
   public validateDeployComputeArgs = (args: Record<string, unknown>): void => {
     const { request, yaml_content, yaml_path } = args;
-    
+
     // Ensure exactly one of the three input methods is provided
     const inputs = [request, yaml_content, yaml_path].filter(Boolean);
-    
+
     if (inputs.length === 0) {
       throw new CustomValidationError(
-        'Must provide exactly one of: request, yaml_content, or yaml_path'
+        'Must provide exactly one of: request, yaml_content, or yaml_path',
       );
     }
-    
+
     if (inputs.length > 1) {
       throw new CustomValidationError(
-        'Cannot provide multiple input methods. Choose one of: request, yaml_content, or yaml_path'
+        'Cannot provide multiple input methods. Choose one of: request, yaml_content, or yaml_path',
       );
     }
   };
@@ -195,7 +197,7 @@ export class ValidationService {
    */
   public validateLeaseId = (leaseId: unknown): string => {
     const validatedId = this.validateNonEmptyString(leaseId, 'lease_id');
-    
+
     // Basic format validation - you might want to add more specific rules
     if (validatedId.length < 10) {
       throw new CustomValidationError('lease_id appears to be too short');
@@ -209,12 +211,10 @@ export class ValidationService {
    */
   public validateTokenSymbol = (token: unknown): string => {
     const validatedToken = this.validateNonEmptyString(token, 'token');
-    
+
     // Basic token validation
     if (!/^[A-Z]{2,10}$/.test(validatedToken)) {
-      throw new CustomValidationError(
-        'token must be 2-10 uppercase letters (e.g., CST, USDC)'
-      );
+      throw new CustomValidationError('token must be 2-10 uppercase letters (e.g., CST, USDC)');
     }
 
     return validatedToken;
@@ -229,7 +229,7 @@ export class ValidationService {
     }
 
     const validatedAddress = this.validateNonEmptyString(address, 'wallet_address');
-    
+
     // Basic wallet address validation - you might want to add more specific rules
     if (validatedAddress.length < 20) {
       throw new CustomValidationError('wallet_address appears to be too short');

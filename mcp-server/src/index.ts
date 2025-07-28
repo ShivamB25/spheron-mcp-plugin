@@ -2,7 +2,7 @@
 
 /**
  * Spheron Protocol MCP Server - Modular Architecture Entry Point
- * 
+ *
  * This MCP server integrates with the Spheron Protocol SDK using a clean,
  * modular architecture with proper separation of concerns, type safety,
  * error handling, and structured logging.
@@ -38,20 +38,20 @@ class SpheronMcpApplication {
       // Initialize configuration
       const configService = createConfigService();
       const config = configService.getConfig();
-      
+
       this.logger.info('Configuration loaded successfully', {
         hasPrivateKey: !!config.environment.SPHERON_PRIVATE_KEY,
         hasYamlApiUrl: !!config.environment.YAML_API_URL,
-        network: config.environment.SPHERON_NETWORK
+        network: config.environment.SPHERON_NETWORK,
       });
 
       // Initialize services
       this.logger.info('Initializing services...');
-      
+
       const spheronService = createSpheroNService({
         network: config.environment.SPHERON_NETWORK,
         privateKey: config.environment.SPHERON_PRIVATE_KEY,
-        yamlApiUrl: config.environment.YAML_API_URL
+        yamlApiUrl: config.environment.YAML_API_URL,
       });
 
       const validationService = createValidationService();
@@ -69,7 +69,7 @@ class SpheronMcpApplication {
           capabilities: {
             tools: {},
           },
-        }
+        },
       );
 
       // Register handlers
@@ -83,22 +83,15 @@ class SpheronMcpApplication {
 
       this.logger.info('Spheron MCP Server started successfully');
       this.logger.info('Server is running on stdio transport');
-
     } catch (error) {
-      this.logger.error(
-        'Failed to start Spheron MCP Server',
-        error as Error,
-      );
-      
+      this.logger.error('Failed to start Spheron MCP Server', error as Error);
+
       if (error instanceof ConfigurationError) {
         this.logger.error('Configuration error detected. Please check your environment variables.');
         throw new Error('Configuration error');
       }
 
-      this.logger.error(
-        'Unexpected error during server startup',
-        error as Error,
-      );
+      this.logger.error('Unexpected error during server startup', error as Error);
       throw new Error('Unexpected error during server startup');
     }
   };
@@ -109,7 +102,7 @@ class SpheronMcpApplication {
   public shutdown = (): void => {
     try {
       this.logger.info('Shutting down Spheron MCP Server...');
-      
+
       if (this.server) {
         // Note: MCP SDK doesn't have a built-in shutdown method
         // This is a placeholder for any cleanup logic
@@ -148,12 +141,7 @@ const main = async (): Promise<void> => {
   });
 
   process.on('unhandledRejection', (reason, promise) => {
-    console.error(
-      '[Fatal] Unhandled Rejection at:',
-      promise,
-      'reason:',
-      reason,
-    );
+    console.error('[Fatal] Unhandled Rejection at:', promise, 'reason:', reason);
     throw new Error('Unhandled Rejection');
   });
 

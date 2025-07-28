@@ -8,9 +8,7 @@
   "bin": {
     "spheron-mcp-plugin": "./build/index.js"
   },
-  "files": [
-    "build"
-  ],
+  "files": ["build"],
   "scripts": {
     "build": "bun run clean && tsc && node --eval \"import('fs').then(fs => fs.chmodSync('build/index.js', '755'))\"",
     "build:watch": "tsc --watch",
@@ -28,7 +26,6 @@
     "lint": "eslint . --ext .ts,.tsx --cache --max-warnings 0",
     "lint:fix": "eslint . --ext .ts,.tsx --fix --cache --max-warnings 0",
     "lint:strict": "eslint . --ext .ts,.tsx --max-warnings 0 --cache --report-unused-disable-directives",
-    "lint:unused": "eslint . --ext .ts,.tsx --cache --max-warnings 0 --rule 'unused-imports/no-unused-imports: error'",
     "lint:imports": "LINT_IMPORTS=true eslint . --ext .ts,.tsx --cache --max-warnings 0",
     "// AGGRESSIVE FORMATTING SCRIPTS": "",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,html,css,yml,yaml}\" --cache --log-level warn",
@@ -39,10 +36,9 @@
     "type-check:unused": "bunx tsc --noEmit --strict --noUnusedLocals --noUnusedParameters",
     "// COMPREHENSIVE CODE QUALITY SCRIPTS": "",
     "code-quality": "bun run type-check && bun run lint:fix && bun run format && bun run type-check",
-    "code-quality:aggressive": "bun run type-check:unused && bun run lint:unused && bun run format:aggressive && bun run type-check:unused",
+    "code-quality:aggressive": "bun run type-check:unused && bun run format:aggressive && bun run type-check:unused",
     "code-quality:ci": "bun run type-check && bun run lint:strict && bun run format:check",
     "// UNUSED CODE DETECTION SCRIPTS": "",
-    "find-unused": "bun run lint:unused --format unix | grep -E '(unused|defined but never used)' || echo 'No unused code found'",
     "find-unused-exports": "bun run lint:imports --format unix | grep -E 'no-unused-modules' || echo 'No unused exports found'",
     "clean-unused": "bun run lint:fix && bun run format",
     "// COMPREHENSIVE CLEANUP SCRIPTS": "",

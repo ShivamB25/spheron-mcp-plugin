@@ -10,10 +10,10 @@ export type SpheroNNetwork = 'testnet' | 'mainnet';
 /**
  * Available operations for Spheron MCP tool
  */
-export type SpheroNOperation = 
-  | 'deploy_compute' 
-  | 'fetch_balance' 
-  | 'fetch_deployment_urls' 
+export type SpheroNOperation =
+  | 'deploy_compute'
+  | 'fetch_balance'
+  | 'fetch_deployment_urls'
   | 'fetch_lease_id';
 
 /**

@@ -47,5 +47,11 @@ export type SpheroNSDKNetworkParam = 'testnet' | 'mainnet';
  * Serialized object (BigInt converted to string)
  */
 export interface ISerializedObject {
-  readonly [key: string]: string | number | boolean | ISerializedObject | ISerializedObject[] | null;
+  readonly [key: string]:
+    | string
+    | number
+    | boolean
+    | ISerializedObject
+    | ISerializedObject[]
+    | null;
 }
