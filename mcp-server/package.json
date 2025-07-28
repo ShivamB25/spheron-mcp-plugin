@@ -13,6 +13,7 @@
     "prepare": "bun run build",
     "clean": "rimraf ./build",
     "build": "bun run clean && tsc && node --eval \"import('fs').then(fs => fs.chmodSync('build/index.js', '755'))\"",
+    "build:watch": "tsc --watch",
     "start": "bun run build && node build/index.js",
     "dev": "bun run --watch src/index.ts",
     "typecheck": "tsc --noEmit",

@@ -99,8 +99,7 @@ bun run start           # Start the built server
 bun run clean           # Clean build directory
 
 # Validation
-bun run type-check      # TypeScript type checking
-bun run validate        # Full validation (type-check + build)
+bun run typecheck       # TypeScript type checking
 
 # Docker
 bun run docker:build    # Build Docker image
@@ -330,7 +329,7 @@ bun run inspector
 LOG_LEVEL=debug bun run dev
 
 # Type checking only
-bun run type-check
+bun run typecheck
 ```
 
 ## 🐳 Docker Deployment
@@ -374,11 +373,7 @@ The included `docker-compose.yml` provides a complete deployment setup with envi
    // BigInt values are converted to strings for JSON serialization
    ```
 
-4. **Configuration Errors**: Check environment variables and validation
-   ```bash
-   # Validate configuration
-   bun run validate
-   ```
+4. **Configuration Errors**: Check environment variables and validation.
 
 ### Logs and Debugging
 
