@@ -88,7 +88,7 @@ export default tseslint.config(
       'simple-import-sort/exports': 'error',
       'perfectionist/sort-imports': 'off', // conflicts with simple-import-sort
       'perfectionist/sort-named-imports': 'error',
-      'perfectionist/sort-exports': 'error',
+      'perfectionist/sort-exports': 'off',
       'perfectionist/sort-objects': 'error',
       'perfectionist/sort-object-types': 'error',
       'perfectionist/sort-interfaces': 'error',
