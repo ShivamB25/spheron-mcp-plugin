@@ -10,12 +10,13 @@
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+
+import { createMcpController } from './controllers/mcp.controller.js';
 import { createConfigService } from './core/config.js';
+import { ConfigurationError } from './core/errors.js';
 import { getLogger, initializeLogger } from './core/logger.js';
 import { createSpheroNService } from './services/spheron.service.js';
 import { createValidationService } from './services/validation.service.js';
-import { createMcpController } from './controllers/mcp.controller.js';
-import { ConfigurationError } from './core/errors.js';
 
 // Initialize logger system at module level
 initializeLogger();
@@ -30,7 +31,7 @@ class SpheronMcpApplication {
   /**
    * Initialize and start the MCP server
    */
-  public async start(): Promise<void> {
+  public start = async (): Promise<void> => {
     try {
       this.logger.info('Starting Spheron MCP Server...');
 
@@ -39,9 +40,9 @@ class SpheronMcpApplication {
       const config = configService.getConfig();
       
       this.logger.info('Configuration loaded successfully', {
-        network: config.environment.SPHERON_NETWORK,
         hasPrivateKey: !!config.environment.SPHERON_PRIVATE_KEY,
-        hasYamlApiUrl: !!config.environment.YAML_API_URL
+        hasYamlApiUrl: !!config.environment.YAML_API_URL,
+        network: config.environment.SPHERON_NETWORK
       });
 
       // Initialize services
@@ -84,22 +85,28 @@ class SpheronMcpApplication {
       this.logger.info('Server is running on stdio transport');
 
     } catch (error) {
-      this.logger.error('Failed to start Spheron MCP Server', error);
+      this.logger.error(
+        'Failed to start Spheron MCP Server',
+        error as Error,
+      );
       
       if (error instanceof ConfigurationError) {
         this.logger.error('Configuration error detected. Please check your environment variables.');
-        process.exit(1);
+        throw new Error('Configuration error');
       }
 
-      this.logger.error('Unexpected error during server startup', error);
-      process.exit(1);
+      this.logger.error(
+        'Unexpected error during server startup',
+        error as Error,
+      );
+      throw new Error('Unexpected error during server startup');
     }
-  }
+  };
 
   /**
    * Graceful shutdown
    */
-  public async shutdown(): Promise<void> {
+  public shutdown = (): void => {
     try {
       this.logger.info('Shutting down Spheron MCP Server...');
       
@@ -111,46 +118,51 @@ class SpheronMcpApplication {
 
       this.logger.info('Spheron MCP Server shutdown completed');
     } catch (error) {
-      this.logger.error('Error during server shutdown', error);
-      process.exit(1);
+      this.logger.error('Error during server shutdown', error as Error);
+      throw new Error('Error during server shutdown');
     }
-  }
+  };
 }
 
 /**
  * Application entry point
  */
-async function main(): Promise<void> {
+const main = async (): Promise<void> => {
   const app = new SpheronMcpApplication();
 
   // Handle graceful shutdown
-  process.on('SIGINT', async () => {
-    await app.shutdown();
-    process.exit(0);
+  process.on('SIGINT', () => {
+    app.shutdown();
+    throw new Error('SIGINT');
   });
 
-  process.on('SIGTERM', async () => {
-    await app.shutdown();
-    process.exit(0);
+  process.on('SIGTERM', () => {
+    app.shutdown();
+    throw new Error('SIGTERM');
   });
 
   // Handle uncaught exceptions
-  process.on('uncaughtException', (error) => {
+  process.on('uncaughtException', (error: unknown) => {
     console.error('[Fatal] Uncaught Exception:', error);
-    process.exit(1);
+    throw new Error('Uncaught Exception');
   });
 
   process.on('unhandledRejection', (reason, promise) => {
-    console.error('[Fatal] Unhandled Rejection at:', promise, 'reason:', reason);
-    process.exit(1);
+    console.error(
+      '[Fatal] Unhandled Rejection at:',
+      promise,
+      'reason:',
+      reason,
+    );
+    throw new Error('Unhandled Rejection');
   });
 
   // Start the application
   await app.start();
-}
+};
 
 // Start the server
-main().catch((error) => {
+main().catch((error: unknown) => {
   console.error('[Fatal] Application startup failed:', error);
-  process.exit(1);
+  throw new Error('Application startup failed');
 });
