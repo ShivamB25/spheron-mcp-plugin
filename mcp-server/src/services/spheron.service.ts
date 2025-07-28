@@ -4,7 +4,7 @@
  */
 
 import { SpheronSDK } from '@spheron/protocol-sdk';
-import { readFile } from 'fs-extra';
+import { readFile } from 'fs/promises';
 import axios from 'axios';
 import {
   IDeploymentResult,

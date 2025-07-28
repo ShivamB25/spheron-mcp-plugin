@@ -11,11 +11,14 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createConfigService } from './core/config.js';
-import { getLogger } from './core/logger.js';
+import { getLogger, initializeLogger } from './core/logger.js';
 import { createSpheroNService } from './services/spheron.service.js';
 import { createValidationService } from './services/validation.service.js';
 import { createMcpController } from './controllers/mcp.controller.js';
 import { ConfigurationError } from './core/errors.js';
+
+// Initialize logger system at module level
+initializeLogger();
 
 /**
  * Main application class
