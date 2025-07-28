@@ -2,14 +2,14 @@
  * Model Context Protocol (MCP) related types and interfaces
  */
 
-import { SpheroNOperation } from './spheron.types.js';
+import type { SpheroNOperation } from './spheron.types.js';
 
 /**
  * MCP Tool response content
  */
 export interface IMcpContent {
-  readonly type: 'text';
   readonly text: string;
+  readonly type: 'text';
 }
 
 /**
@@ -24,18 +24,18 @@ export interface IMcpResponse {
  * MCP Tool success response
  */
 export interface IMcpSuccessResponse<T = unknown> {
-  readonly success: true;
   readonly data: T;
   readonly message?: string;
+  readonly success: true;
 }
 
 /**
  * MCP Tool error response
  */
 export interface IMcpErrorResponse {
-  readonly success: false;
-  readonly error: string;
   readonly code?: string;
+  readonly error: string;
+  readonly success: false;
 }
 
 /**
@@ -47,19 +47,19 @@ export type McpApiResponse<T = unknown> = IMcpSuccessResponse<T> | IMcpErrorResp
  * MCP Tool input schema properties
  */
 export interface IMcpToolInputSchema {
-  readonly type: 'object';
+  readonly oneOf?: unknown[];
   readonly properties: Record<string, unknown>;
   readonly required: string[];
-  readonly oneOf?: unknown[];
+  readonly type: 'object';
 }
 
 /**
  * MCP Tool definition
  */
 export interface IMcpTool {
-  readonly name: string;
   readonly description: string;
   readonly inputSchema: IMcpToolInputSchema;
+  readonly name: string;
 }
 
 /**
@@ -81,8 +81,8 @@ export interface IMcpServerInfo {
  * MCP Server configuration
  */
 export interface IMcpServerConfig {
-  readonly info: IMcpServerInfo;
   readonly capabilities: IMcpCapabilities;
+  readonly info: IMcpServerInfo;
 }
 
 /**
@@ -116,16 +116,16 @@ export interface IFetchBalanceArgs extends IBaseOperationArgs {
  * Fetch deployment URLs operation arguments
  */
 export interface IFetchDeploymentUrlsArgs extends IBaseOperationArgs {
-  readonly operation: 'fetch_deployment_urls';
   readonly lease_id: string;
+  readonly operation: 'fetch_deployment_urls';
 }
 
 /**
  * Fetch lease ID operation arguments
  */
 export interface IFetchLeaseIdArgs extends IBaseOperationArgs {
-  readonly operation: 'fetch_lease_id';
   readonly lease_id: string;
+  readonly operation: 'fetch_lease_id';
 }
 
 /**
