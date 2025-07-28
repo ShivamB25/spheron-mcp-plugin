@@ -32,15 +32,15 @@ export abstract class BaseError extends Error {
   /**
    * Serialize error for JSON responses
    */
-  public toJSON(): Record<string, unknown> {
+  public toJSON = (): Record<string, unknown> => {
     return {
-      name: this.name,
-      message: this.message,
       code: this.code,
-      statusCode: this.statusCode,
       context: this.context,
+      message: this.message,
+      name: this.name,
+      statusCode: this.statusCode,
     };
-  }
+  };
 }
 
 /**
@@ -100,7 +100,7 @@ export class NetworkError extends BaseError {
 /**
  * Convert application errors to MCP errors
  */
-export function toMcpError(error: BaseError): { code: ErrorCode; message: string } {
+export const toMcpError = (error: BaseError): { code: ErrorCode; message: string } => {
   switch (error.code) {
     case 'VALIDATION_ERROR':
       return {
@@ -130,19 +130,19 @@ export function toMcpError(error: BaseError): { code: ErrorCode; message: string
         message: 'An unexpected error occurred',
       };
   }
-}
+};
 
 /**
  * Type guard to check if error is a BaseError
  */
-export function isBaseError(error: unknown): error is BaseError {
+export const isBaseError = (error: unknown): error is BaseError => {
   return error instanceof BaseError;
-}
+};
 
 /**
  * Extract error message from unknown error type
  */
-export function getErrorMessage(error: unknown): string {
+export const getErrorMessage = (error: unknown): string => {
   if (isBaseError(error)) {
     return error.message;
   }
@@ -150,28 +150,28 @@ export function getErrorMessage(error: unknown): string {
     return error.message;
   }
   return String(error);
-}
+};
 
 /**
  * Create a standardized error response
  */
-export function createErrorResponse(error: unknown): {
-  success: false;
-  error: string;
+export const createErrorResponse = (error: unknown): {
   code?: string;
   context?: Record<string, unknown>;
-} {
+  error: string;
+  success: false;
+} => {
   if (isBaseError(error)) {
     return {
-      success: false,
-      error: error.message,
       code: error.code,
       context: error.context,
+      error: error.message,
+      success: false,
     };
   }
 
   return {
-    success: false,
     error: getErrorMessage(error),
+    success: false,
   };
-}
+};
