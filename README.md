@@ -1,149 +1,181 @@
 # Spheron Network MCP Plugin
 
-This MCP (Model Context Protocol) plugin integrates with the Spheron Protocol SDK to provide compute deployment and management capabilities directly through Claude.
+A production-ready MCP (Model Context Protocol) server that integrates with the Spheron Protocol SDK to provide compute deployment and management capabilities directly through Claude and other MCP-compatible clients.
 
-## Recent Fixes
+## 🚀 Architecture Overview
 
-- **ES Module Compatibility**: Fixed fs-extra import to work properly with ES modules
-- **BigInt Serialization**: Added proper handling of BigInt values in API responses to prevent JSON serialization errors
+This plugin has been architected using modern TypeScript best practices with a clean, modular design:
 
-## Features
+- **🏗️ Modular Architecture**: Clean separation of concerns with dedicated controllers, services, and types
+- **🔒 Type Safety**: Strict TypeScript implementation with zero `any` usage (except where required by external SDKs)
+- **⚡ Performance**: Optimized build process with efficient dependency management
+- **📝 Comprehensive Logging**: Structured logging with contextual metadata
+- **🛡️ Error Handling**: Robust error handling with custom error classes
+- **✅ Input Validation**: Strict validation using class-validator patterns
+- **🔧 Configuration Management**: Centralized configuration with environment validation
 
-- **Deploy Compute Resources**: Deploy compute resources using YAML configuration
-- **Fetch Wallet Balance**: Check your wallet balance for different tokens
-- **Fetch Deployment URLs**: Get URLs for your active deployments
-- **Fetch Lease ID Details**: Get detailed information about a lease
+## 📁 Project Structure
 
-## Installation
+```
+spheron-mcp-plugin/
+├── mcp-server/
+│   ├── src/
+│   │   ├── controllers/          # MCP request handlers
+│   │   │   └── mcp.controller.ts
+│   │   ├── services/             # Business logic layer
+│   │   │   ├── spheron.service.ts
+│   │   │   └── validation.service.ts
+│   │   ├── core/                 # Core infrastructure
+│   │   │   ├── config.ts         # Configuration management
+│   │   │   ├── errors.ts         # Custom error classes
+│   │   │   └── logger.ts         # Structured logging
+│   │   ├── types/                # TypeScript type definitions
+│   │   │   ├── config.types.ts
+│   │   │   ├── mcp.types.ts
+│   │   │   ├── spheron.types.ts
+│   │   │   └── validation.types.ts
+│   │   └── index.ts              # Application entry point
+│   ├── build/                    # Compiled JavaScript (git-ignored)
+│   ├── package.json              # Dependencies and scripts
+│   ├── tsconfig.json             # TypeScript configuration
+│   └── Dockerfile                # Container configuration
+└── README.md
+```
 
-### 1. Clone the Repository
+## ✨ Features
+
+- **🖥️ Deploy Compute Resources**: Deploy compute resources using YAML configuration or natural language
+- **💰 Fetch Wallet Balance**: Check wallet balance for different tokens (CST, USDC, etc.)
+- **🌍 Fetch Deployment URLs**: Get URLs and details for active deployments
+- **📋 Fetch Lease Details**: Get comprehensive information about lease/deployment status
+- **🔄 BigInt Serialization**: Proper handling of BigInt values in API responses
+- **📊 Structured Logging**: Comprehensive logging with request tracing and error context
+
+## 🛠️ Installation
+
+### Prerequisites
+
+- **Node.js**: Version 18.0.0 or higher
+- **npm/bun**: Package manager
+- **Docker** (optional): For containerized deployment
+
+### 1. Clone and Setup
 
 ```bash
 # Clone the repository
 git clone https://github.com/spheronFdn/spheron-mcp-plugin.git
+cd spheron-mcp-plugin/mcp-server
 
-# Navigate to the project directory
-cd spheron-mcp-plugin
-```
-
-### 2. Set Up Node.js Version
-
-#### Using nvm (recommended)
-
-```bash
-# If you don't have nvm installed, install it first:
-# For macOS/Linux:
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-# or
-wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-
-# For Windows (using Windows Subsystem for Linux or Git Bash):
-# Follow instructions at https://github.com/nvm-sh/nvm
-
-# Restart your terminal or run:
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-# Use the project's Node.js version (defined in .nvmrc)
-nvm use
-
-# If you get an error that the version isn't installed:
-nvm install
-nvm use
-```
-
-#### Without nvm
-
-If you're not using nvm, ensure your system Node.js version is 16.0.0 or higher:
-
-```bash
-# Check your Node.js version
-node -v
-
-# If it's below 16.0.0, download and install from nodejs.org
-# https://nodejs.org/en/download/
-```
-
-### 3. Install Dependencies and Build
-
-```bash
-# Navigate to the server directory
-cd spheron-server
-
-# Install dependencies
+# Install dependencies (using bun for faster installation)
+bun install
+# or with npm
 npm install
+```
 
-# Build the project
+### 2. Build the Project
+
+```bash
+# Clean build
+bun run build
+# or
 npm run build
 
-# Verify the build was successful
-ls -la build
+# Development build with watch mode
+bun run build:watch
+# or
+npm run build:watch
 ```
 
-The build process will:
-
-1. Compile TypeScript to JavaScript
-2. Make the main file executable
-3. Run the Node.js version check script
-
-## Configuration
-
-### VS Code Configuration
-
-1. Locate or create the MCP settings file:
+### 3. Available Scripts
 
 ```bash
-# For Linux:
-mkdir -p ~/.config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/
-touch ~/.config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
+# Development
+bun run dev              # Build and start in development mode
+bun run build:watch      # Watch mode for development
 
-# For macOS:
-mkdir -p ~/Library/Application\ Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/
-touch ~/Library/Application\ Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
+# Production
+bun run build           # Clean build for production
+bun run start           # Start the built server
+bun run clean           # Clean build directory
 
-# For Windows:
-# Create the file at %APPDATA%\Code\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json
+# Validation
+bun run type-check      # TypeScript type checking
+bun run validate        # Full validation (type-check + build)
+
+# Docker
+bun run docker:build    # Build Docker image
+bun run docker:run      # Run with docker-compose
+bun run docker:stop     # Stop docker-compose
+
+# MCP Tools
+bun run inspector       # Launch MCP inspector for debugging
 ```
 
-2. Edit the settings file with your configuration:
+## ⚙️ Configuration
 
-```bash
-# Open the file in your preferred editor
-# For example:
-nano ~/.config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
+The plugin uses a sophisticated configuration management system with environment validation.
+
+### Environment Variables
+
+Create a `.env` file in the `mcp-server` directory:
+
+```env
+# Required
+SPHERON_PRIVATE_KEY=your-spheron-private-key-here
+
+# Optional (with defaults)
+SPHERON_NETWORK=testnet                                     # testnet | mainnet
+PROVIDER_PROXY_URL=https://provider-proxy.spheron.network  # Provider proxy URL
+YAML_API_URL=http://provider.cpu.gpufarm.xyz:32692/generate # YAML generation API
+LOG_LEVEL=info                                              # Logging level
+NODE_ENV=development                                        # Environment mode
 ```
 
-3. Find the absolute path to the mcp-server directory:
+### MCP Client Configuration
 
-```bash
-# For example:
-pwd
-```
+#### VS Code (Cline Extension)
 
-4. Add the following configuration (adjust paths and keys as needed):
+**Path**: `~/.config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json` (Linux)
+**Path**: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json` (macOS)
 
 ```json
 {
   "mcpServers": {
     "spheron": {
       "command": "node",
-      "args": [
-        "/absolute/path/to/spheron-mcp-plugin/mcp-server/build/index.js"
-      ],
+      "args": ["/absolute/path/to/spheron-mcp-plugin/mcp-server/build/index.js"],
       "env": {
         "SPHERON_PRIVATE_KEY": "your-spheron-private-key",
         "SPHERON_NETWORK": "testnet",
-        "PROVIDER_PROXY_URL": "https://provider-proxy.sphn.xyz",
-        "YAML_API_URL": "http://149.56.15.95:8080/generate"
-      },
-      "disabled": false,
-      "autoApprove": []
+        "PROVIDER_PROXY_URL": "https://provider-proxy.spheron.network",
+        "YAML_API_URL": "http://provider.cpu.gpufarm.xyz:32692/generate"
+      }
     }
   }
 }
 ```
 
-5. Or use the Docker configuration:
+#### Claude Desktop
+
+**Path**: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
+**Path**: `%APPDATA%\Claude\claude_desktop_config.json` (Windows)
+
+```json
+{
+  "mcpServers": {
+    "spheron": {
+      "command": "node",
+      "args": ["/absolute/path/to/spheron-mcp-plugin/mcp-server/build/index.js"],
+      "env": {
+        "SPHERON_PRIVATE_KEY": "your-spheron-private-key",
+        "SPHERON_NETWORK": "testnet"
+      }
+    }
+  }
+}
+```
+
+#### Docker Configuration
 
 ```json
 {
@@ -151,166 +183,36 @@ pwd
     "spheron": {
       "command": "docker",
       "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e",
-        "SPHERON_PRIVATE_KEY",
-        "-e",
-        "SPHERON_NETWORK",
-        "-e",
-        "PROVIDER_PROXY_URL",
-        "-e",
-        "YAML_API_URL",
-        "saurrx/spheron-mcp:latest"
+        "run", "-i", "--rm",
+        "-e", "SPHERON_PRIVATE_KEY",
+        "-e", "SPHERON_NETWORK",
+        "spheronfdn/spheron-mcp:latest"
       ],
       "env": {
         "SPHERON_PRIVATE_KEY": "your-spheron-private-key",
-        "SPHERON_NETWORK": "testnet",
-        "PROVIDER_PROXY_URL": "https://provider-proxy.sphn.xyz",
-        "YAML_API_URL": "http://149.56.15.95:8080/generate"
-      },
-      "disabled": false,
-      "autoApprove": []
+        "SPHERON_NETWORK": "testnet"
+      }
     }
   }
 }
 ```
 
-6. Save the file and restart VS Code
+## 🔧 Usage Examples
 
-### Claude Desktop Configuration
+### Deploy with Natural Language
 
-1. Locate or create the Claude Desktop configuration file:
-
-```bash
-# For macOS:
-mkdir -p ~/Library/Application\ Support/Claude/
-touch ~/Library/Application\ Support/Claude/claude_desktop_config.json
-
-# For Windows:
-# Create the file at %APPDATA%\Claude\claude_desktop_config.json
-
-# For Linux:
-mkdir -p ~/.config/Claude/
-touch ~/.config/Claude/claude_desktop_config.json
+```
+Deploy a PyTorch Jupyter notebook with GPU support on Spheron
 ```
 
-2. Edit the configuration file:
-
-```bash
-# Open the file in your preferred editor
-# For example:
-nano ~/Library/Application\ Support/Claude/claude_desktop_config.json
-```
-
-3. Add the following configuration (adjust paths and keys as needed):
-
-### Docker Configuration
-
-```json
-{
-  "mcpServers": {
-    "spheron": {
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e",
-        "SPHERON_PRIVATE_KEY",
-        "-e",
-        "SPHERON_NETWORK",
-        "-e",
-        "PROVIDER_PROXY_URL",
-        "-e",
-        "YAML_API_URL",
-        "saurrx/spheron-mcp:latest"
-      ],
-      "env": {
-        "SPHERON_PRIVATE_KEY": "your-spheron-private-key",
-        "SPHERON_NETWORK": "testnet",
-        "PROVIDER_PROXY_URL": "https://provider-proxy.sphn.xyz",
-        "YAML_API_URL": "http://149.56.15.95:8080/generate"
-      },
-      "disabled": false,
-      "autoApprove": []
-    }
-  }
-}
-```
-
-### Node Configuration
-
-Find the absolute path to the mcp-server directory:
-
-```bash
-# For example:
-pwd
-```
-
-Add the following configuration:
-
-```json
-{
-  "mcpServers": {
-    "spheron": {
-      "command": "node",
-      "args": [
-        "/absolute/path/to/spheron-mcp-plugin/mcp-server/build/index.js"
-      ],
-      "env": {
-        "SPHERON_PRIVATE_KEY": "your-spheron-private-key",
-        "SPHERON_NETWORK": "testnet",
-        "PROVIDER_PROXY_URL": "https://provider-proxy.sphn.xyz",
-        "YAML_API_URL": "http://149.56.15.95:8080/generate"
-      },
-      "disabled": false,
-      "autoApprove": []
-    }
-  }
-}
-```
-
-4. Save the file and restart Claude Desktop
-
-### Cursor Configuration
-
-1. Locate or create the Cursor configuration file:
-
-```bash
-# For macOS:
-mkdir -p ~/Library/Application\ Support/Cursor/User/globalStorage/saoudrizwan.claude-dev/settings/
-touch ~/Library/Application\ Support/Cursor/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
-
-# For Windows:
-# Create the file at %APPDATA%\Cursor\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json
-
-# For Linux:
-mkdir -p ~/.config/Cursor/User/globalStorage/saoudrizwan.claude-dev/settings/
-touch ~/.config/Cursor/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
-```
-
-2. Edit the configuration file:
-
-```bash
-# Open the file in your preferred editor
-# For example:
-nano ~/.config/Cursor/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
-```
-
-## Usage
-
-Once installed, you can use the Spheron Protocol MCP plugin through Claude with commands like:
-
-### Deploy Compute
+### Deploy with YAML Configuration
 
 ```
 Deploy this compute configuration:
-version: "1.0"
 
+version: "1.0"
 services:
-  py-cuda:
+  pytorch-gpu:
     image: quay.io/jupyter/pytorch-notebook:cuda12-pytorch-2.4.1
     expose:
       - port: 8888
@@ -318,15 +220,14 @@ services:
         to:
           - global: true
     env:
-      - JUPYTER_TOKEN=sentient
+      - JUPYTER_TOKEN=secure123
 profiles:
-  name: py-cuda
-  duration: 2h
-  mode: provider
+  name: pytorch-gpu
+  duration: 4h
   tier:
     - community
   compute:
-    py-cuda:
+    pytorch-gpu:
       resources:
         cpu:
           units: 8
@@ -340,53 +241,185 @@ profiles:
             vendor:
               nvidia:
                 - model: rtx4090
-  placement:
-    westcoast:
-      attributes:
-        region: us-central
-      pricing:
-        py-cuda:
-          token: CST
-          amount: 10
-
-deployment:
-  py-cuda:
-    westcoast:
-      profile: py-cuda
-      count: 1
-```
-
-Or say:
-
-```
-Deploy this jupyter notebook on Spheron
 ```
 
 ### Check Wallet Balance
 
 ```
 What's my CST balance on Spheron?
+Check my USDC balance
 ```
 
-### Get Deployment URLs
+### Get Deployment Information
 
 ```
-Show me the URLs for my deployment with lease ID 12345
+Show me the URLs for deployment lease-123456
+Get details for my active deployments
+What's the status of lease lease-789012?
 ```
 
-### Get Lease Details
+## 🏗️ Development
 
+### Architecture Principles
+
+This codebase follows **SOLID principles** and **Clean Architecture** patterns:
+
+1. **Single Responsibility**: Each class has one reason to change
+2. **Open/Closed**: Open for extension, closed for modification
+3. **Liskov Substitution**: Derived classes are substitutable for base classes
+4. **Interface Segregation**: No code depends on methods it doesn't use
+5. **Dependency Inversion**: Depend on abstractions, not concretions
+
+### Key Components
+
+#### Controllers (`src/controllers/`)
+- **`McpController`**: Handles MCP protocol requests and responses
+- Follows dependency injection patterns
+- Maps MCP requests to service operations
+
+#### Services (`src/services/`)
+- **`SpheroNService`**: Core business logic for Spheron SDK interactions
+- **`ValidationService`**: Input validation and data transformation
+- Single-purpose classes with clear interfaces
+
+#### Core Infrastructure (`src/core/`)
+- **`ConfigService`**: Centralized configuration management with validation
+- **`Logger`**: Structured logging with contextual metadata
+- **`Errors`**: Custom error classes with proper error handling
+
+#### Types (`src/types/`)
+- Comprehensive TypeScript type definitions
+- Strict typing for all data structures
+- No `any` types (except where required by external libraries)
+
+### Code Style Guidelines
+
+```typescript
+// ✅ Good: Proper typing and documentation
+/**
+ * Deploy compute resources using Spheron SDK
+ * @param dto - Validated deployment configuration
+ * @returns Promise resolving to deployment result
+ */
+public async deployCompute(dto: DeployComputeDto): Promise<IDeploymentResult> {
+  const yamlContent = await this.getYamlContent(dto);
+  return await this.sdk.deployment.createDeployment(yamlContent);
+}
+
+// ❌ Bad: Any types and poor documentation
+public async deployCompute(dto: any): Promise<any> {
+  return await this.sdk.deployment.createDeployment(dto.yaml);
+}
 ```
-Get details for lease ID 12345
+
+### Adding New Features
+
+1. **Define Types**: Create interfaces in appropriate `types/` files
+2. **Add Service Logic**: Implement business logic in `services/`
+3. **Update Controller**: Add request handling in `controllers/`
+4. **Update Validation**: Add input validation if needed
+5. **Test**: Verify functionality with MCP inspector
+
+### Debugging
+
+```bash
+# Launch MCP inspector
+bun run inspector
+
+# Enable debug logging
+LOG_LEVEL=debug bun run dev
+
+# Type checking only
+bun run type-check
 ```
 
-## Environment Variables
+## 🐳 Docker Deployment
 
-- `SPHERON_PRIVATE_KEY`: Your Spheron private key for authentication
-- `SPHERON_NETWORK`: Network to use (testnet or mainnet)
-- `PROVIDER_PROXY_URL`: URL for the provider proxy server
-- `YAML_API_URL`: URL for the YAML generation API service
+### Build and Run
 
-## License
+```bash
+# Build Docker image
+docker build -t spheronfdn/spheron-mcp:latest .
 
-MIT
+# Run with docker-compose
+docker-compose up
+
+# Or run directly
+docker run -e SPHERON_PRIVATE_KEY=your-key spheronfdn/spheron-mcp:latest
+```
+
+### Docker Compose
+
+The included `docker-compose.yml` provides a complete deployment setup with environment variable management.
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+1. **Build Errors**: Ensure TypeScript dependencies are installed
+   ```bash
+   bun install --frozen-lockfile
+   ```
+
+2. **Module Resolution**: ES modules require `.js` extensions in imports
+   ```typescript
+   import { SpheroNService } from './services/spheron.service.js'; // ✅
+   import { SpheroNService } from './services/spheron.service'; // ❌
+   ```
+
+3. **BigInt Serialization**: Handled automatically by the service layer
+   ```typescript
+   // Handled automatically
+   const result = await spheronService.deployCompute(dto);
+   // BigInt values are converted to strings for JSON serialization
+   ```
+
+4. **Configuration Errors**: Check environment variables and validation
+   ```bash
+   # Validate configuration
+   bun run validate
+   ```
+
+### Logs and Debugging
+
+- **Structured Logging**: All operations include contextual metadata
+- **Error Tracking**: Full error context with stack traces
+- **Request Tracing**: Each request includes a correlation ID
+
+## 📈 Version History
+
+### v1.0.0 - Modular Architecture
+- ✅ Complete TypeScript migration with strict typing
+- ✅ Modular architecture with separation of concerns  
+- ✅ Comprehensive error handling and logging
+- ✅ Input validation and configuration management
+- ✅ Enhanced build and deployment scripts
+- ✅ Docker containerization support
+
+### v0.1.1 - Legacy Version
+- Basic functionality with monolithic structure
+- ES module compatibility fixes
+- BigInt serialization handling
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Follow the TypeScript coding standards
+4. Ensure all types are properly defined
+5. Add appropriate error handling and logging
+6. Test with the MCP inspector
+7. Commit changes: `git commit -m 'Add amazing feature'`
+8. Push to branch: `git push origin feature/amazing-feature`
+9. Open a Pull Request
+
+## 📄 License
+
+MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🔗 Links
+
+- [Spheron Protocol](https://spheron.network/)
+- [Model Context Protocol](https://modelcontextprotocol.io/)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
+- [Docker Documentation](https://docs.docker.com/)
