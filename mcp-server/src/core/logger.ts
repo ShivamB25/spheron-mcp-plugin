@@ -4,27 +4,28 @@
  */
 
 import winston from 'winston';
-import { ILoggerConfig } from '../types/config.types.js';
+
+import type { ILoggerConfig } from '../types/config.types.js';
 
 /**
  * Log levels enum
  */
 export enum LogLevel {
-  ERROR = 'error',
-  WARN = 'warn',
-  INFO = 'info',
   DEBUG = 'debug',
+  ERROR = 'error',
+  INFO = 'info',
+  WARN = 'warn',
 }
 
 /**
  * Logger service class
  */
 export class Logger {
-  private static instance: Logger;
-  private logger: winston.Logger;
-  private context: string;
+  private static instance: Logger | undefined;
+  private readonly logger: winston.Logger;
+  private readonly context: string;
 
-  private constructor(config: ILoggerConfig, context: string = 'Application') {
+  private constructor(config: ILoggerConfig, context = 'Application') {
     this.context = context;
     this.logger = this.createLogger(config);
   }
@@ -32,35 +33,30 @@ export class Logger {
   /**
    * Get or create singleton logger instance
    */
-  public static getInstance(
-    config?: ILoggerConfig,
+  public static getInstance = (
+    config: ILoggerConfig,
     context?: string
-  ): Logger {
-    if (!Logger.instance) {
-      if (!config) {
-        throw new Error('Logger config is required for first initialization');
-      }
-      Logger.instance = new Logger(config, context);
-    }
+  ): Logger => {
+    Logger.instance ??= new Logger(config, context);
     return Logger.instance;
-  }
+  };
 
   /**
    * Create a new logger instance with specific context
    */
-  public static createContextLogger(context: string): Logger {
+  public static createContextLogger = (context: string): Logger => {
     if (!Logger.instance) {
       throw new Error('Logger must be initialized first');
     }
     const newLogger = Object.create(Logger.instance);
     newLogger.context = context;
     return newLogger;
-  }
+  };
 
   /**
    * Create winston logger with configuration
    */
-  private createLogger(config: ILoggerConfig): winston.Logger {
+  private readonly createLogger = (config: ILoggerConfig): winston.Logger => {
     const transports: winston.transport[] = [];
 
     // Console transport
@@ -70,11 +66,11 @@ export class Logger {
           format: winston.format.combine(
             winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
             winston.format.errors({ stack: true }),
-            winston.format.printf(({ timestamp, level, message, context, ...meta }) => {
-              const contextStr = context ? `[${context}]` : '';
-              const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
-              return `${timestamp} [${level.toUpperCase()}] ${contextStr} ${message}${metaStr}`;
-            })
+            winston.format.printf(({ context: logContext, level, message, timestamp, ...meta }) => {
+              const contextStr = logContext ? `[${typeof logContext === 'string' ? logContext : JSON.stringify(logContext)}]` : '';
+              const metaStr = Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
+              return `${String(timestamp)} [${String(level).toUpperCase()}] ${contextStr} ${String(message)}${metaStr}`;
+            }),
           ),
         })
       );
@@ -95,135 +91,139 @@ export class Logger {
     }
 
     return winston.createLogger({
-      level: config.level,
+      exitOnError: false,
       format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.errors({ stack: true })
       ),
+      level: config.level,
       transports,
-      exitOnError: false,
     });
-  }
+  };
 
   /**
    * Log error message
    */
-  public error(message: string, error?: Error | unknown, meta?: Record<string, unknown> | string): void {
+  public error = (message: string, error?: unknown, meta?: Record<string, unknown> | string): void => {
     const logContext = typeof meta === 'string' ? meta : this.context;
     const metadata = typeof meta === 'object' ? meta : {};
     
-    const errorMeta = error instanceof Error ? {
-      stack: error.stack,
-      name: error.name
-    } : error ? { error } : {};
+    let errorMeta: Record<string, unknown> = {};
+    if (error) {
+      if (error instanceof Error) {
+        errorMeta = { message: error.message, name: error.name, stack: error.stack };
+      } else {
+        errorMeta = { error: JSON.stringify(error) };
+      }
+    }
 
     this.logger.error(message, {
       context: logContext,
       ...errorMeta,
       ...metadata
     });
-  }
+  };
 
   /**
    * Log warning message
    */
-  public warn(message: string, meta?: Record<string, unknown> | string): void {
+  public warn = (message: string, meta?: Record<string, unknown> | string): void => {
     const logContext = typeof meta === 'string' ? meta : this.context;
     const metadata = typeof meta === 'object' ? meta : {};
     this.logger.warn(message, {
       context: logContext,
       ...metadata
     });
-  }
+  };
 
   /**
    * Log info message
    */
-  public info(message: string, meta?: Record<string, unknown> | string): void {
+  public info = (message: string, meta?: Record<string, unknown> | string): void => {
     const logContext = typeof meta === 'string' ? meta : this.context;
     const metadata = typeof meta === 'object' ? meta : {};
     this.logger.info(message, {
       context: logContext,
       ...metadata
     });
-  }
+  };
 
   /**
    * Log debug message
    */
-  public debug(message: string, meta?: Record<string, unknown> | string): void {
+  public debug = (message: string, meta?: Record<string, unknown> | string): void => {
     const logContext = typeof meta === 'string' ? meta : this.context;
     const metadata = typeof meta === 'object' ? meta : {};
     this.logger.debug(message, {
       context: logContext,
       ...metadata
     });
-  }
+  };
 
   /**
    * Log with custom level and metadata
    */
-  public log(
+  public log = (
     level: LogLevel,
     message: string,
     meta?: Record<string, unknown>,
     context?: string
-  ): void {
-    const logContext = context || this.context;
-    this.logger.log(level, message, { 
+  ): void => {
+    const logContext = context ?? this.context;
+    this.logger.log(level, message, {
       context: logContext,
-      ...meta 
+      ...meta
     });
-  }
+  };
 
   /**
    * Create a child logger with additional metadata
    */
-  public child(meta: Record<string, unknown>): winston.Logger {
+  public child = (meta: Record<string, unknown>): winston.Logger => {
     return this.logger.child(meta);
-  }
+  };
 
   /**
    * Set log level dynamically
    */
-  public setLevel(level: LogLevel): void {
+  public setLevel = (level: LogLevel): void => {
     this.logger.level = level;
-  }
+  };
 
   /**
    * Check if level is enabled
    */
-  public isLevelEnabled(level: LogLevel): boolean {
+  public isLevelEnabled = (level: LogLevel): boolean => {
     return this.logger.isLevelEnabled(level);
-  }
+  };
 }
 
 /**
  * Create default logger configuration
  */
-export function createDefaultLoggerConfig(): ILoggerConfig {
+export const createDefaultLoggerConfig = (): ILoggerConfig => {
   return {
-    level: process.env.LOG_LEVEL || LogLevel.INFO,
-    format: 'combined',
     enableConsole: true,
     enableFile: false,
+    format: 'combined',
+    level: process.env.LOG_LEVEL ?? LogLevel.INFO,
   };
-}
+};
 
 /**
  * Initialize logger with configuration
  */
-export function initializeLogger(config?: ILoggerConfig): Logger {
-  const loggerConfig = config || createDefaultLoggerConfig();
+export const initializeLogger = (config?: ILoggerConfig): Logger => {
+  const loggerConfig = config ?? createDefaultLoggerConfig();
   return Logger.getInstance(loggerConfig, 'SpheroNMCP');
-}
+};
 
 /**
  * Get logger instance (must be initialized first)
  */
-export function getLogger(context?: string): Logger {
+export const getLogger = (context?: string): Logger => {
   if (context) {
     return Logger.createContextLogger(context);
   }
-  return Logger.getInstance();
-}
+  return Logger.getInstance(createDefaultLoggerConfig());
+};
