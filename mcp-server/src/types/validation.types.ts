@@ -2,8 +2,9 @@
  * Validation types and DTOs using class-validator approach
  */
 
-import { IsString, IsOptional, IsEnum, IsNotEmpty, ValidateIf } from 'class-validator';
-import { SpheroNOperation, SpheroNNetwork } from './spheron.types.js';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, ValidateIf } from 'class-validator';
+
+import { SpheroNNetwork,SpheroNOperation } from './spheron.types.js';
 
 /**
  * Base DTO for all Spheron operations
@@ -122,15 +123,15 @@ export type OperationDto =
  * Validation error details
  */
 export interface IValidationError {
+  readonly constraints: Record<string, string>;
   readonly property: string;
   readonly value: unknown;
-  readonly constraints: Record<string, string>;
 }
 
 /**
  * Validation result
  */
 export interface IValidationResult {
-  readonly isValid: boolean;
   readonly errors: IValidationError[];
+  readonly isValid: boolean;
 }
